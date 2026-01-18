@@ -1,7 +1,24 @@
-import type { NextConfig } from "next";
+import { NextConfig } from 'next';
+import createNextIntlPlugin from 'next-intl/plugin';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+    images: {
+        remotePatterns: [
+            {
+                protocol: "http",
+                hostname: "laravel-next-ecomm",
+            },
+            {
+                protocol: "http",
+                hostname: "laravel-next-ecomm.test",
+            },
+            {
+                protocol: "https",
+                hostname: "via.placeholder.com",
+            },
+        ],
+    },
 };
 
-export default nextConfig;
+const withNextIntl = createNextIntlPlugin();
+export default withNextIntl(nextConfig);
