@@ -1,0 +1,119 @@
+{
+  "Menu": {
+    "Home": "الرئيسية",
+    "Categories": "الفئات",
+    "Colors": "الألوان",
+    "Shop": "المتجر",
+    "Wishlist": "المفضلة",
+    "Cart": "سلة التسوق",
+    "Account": "حسابي",
+    "SignIn": "تسجيل الدخول",
+    "SignUp": "إنشاء حساب"
+  },
+  "Home": {
+    "title": "الرئيسية",
+    "viewAllProducts": "عرض جميع المنتجات",
+    "shopNow": "اشتري الآن"
+  },
+  "Categories":{
+      "All": "الكل ",
+      "Categories": "الفئات",
+      "BrowseByCategory": "تصفح حسب الفئة"
+  },
+  "Colors":{
+    "Colors": "الألوان"
+  },
+  "Shop": {
+    "title": "المتجر",
+    "viewAllProducts": "عرض جميع المنتجات",
+    "shopNow": "اشتري الآن"
+  },
+  "Wishlist": {
+    "title": "المفضلة",
+    "viewAllProducts": "عرض جميع المنتجات",
+    "shopNow": "اشتري الآن"
+  },
+  "Cart": {
+    "ShoppingCart": "سلة التسوق",
+    "Details": "التفاصيل",
+    "Address": "العنوان",
+    "Payment": "الدفع",
+    "Review": "المراجعة",
+    "AddToCart": "أضف إلى السلة",
+    "AddToWishlist": "أضف إلى المفضلة"
+  },
+  "Account": {
+    "MyAccount": "حسابي",
+    "MyOrders": "طلباتي",
+    "MyAddresses": "عناويني",
+    "MyWishlist": "المفضلة",
+    "MyCart": "سلة التسوق",
+    "MyReviews": "التقييمات",
+    "MySettings": "الإعدادات",
+    "MyLogout": "تسجيل الخروج"
+  },
+  "Products": {
+    "ViewAllProducts": "عرض جميع المنتجات",
+    "NoProductsFound": "لا توجد منتجات",
+    "FailedToLoadProducts": "فشل في تحميل المنتجات",
+    "Price": "السعر",
+    "From": "من",
+    "To": "إلى",
+    "PriceRange": "نطاق السعر",
+    "Brands": "العلامات التجارية",
+    "ProductDetails": "تفاصيل المنتج",
+    "ProductNotFound": "المنتج غير موجود",
+    "BackToShop": "العودة إلى المتجر",
+    "TheRequestedProductCouldNotBeFound": "المنتج المطلوب غير موجود",
+    "Quantity": "الكمية",
+    "Total": "الإجمالي",
+    "Product": "المنتج",
+    "InStock": "متوفر",
+    "OutStock": "غير متوفر"
+
+  },
+  "Pagination":{
+    "Previous": "السابق",
+    "Next": "التالي"
+  },
+  "Payment":{
+    "Cash_On_Delivery":"الدفع عندالإستلام",
+    "Order_Review":"مراجعة الطلب",
+    "Thank_you_for_your_order!":"شكراً لك على طلبك!",
+    "Your_order_has_been_placed_successfully":"تم تسجيل طلبك بنجاح.",
+    "You_will_receive_a_confirmation_email_with_your_order_details":"سوف تتلقي بريد إلكتروني لتأكيد طلبك",
+    "You_can_track_your_order_in_your_account":"يمكنك تتبع طلبك في حسابك",
+    "Go_to_My_Orders":"ไป إلى طلباتي",
+    "Continue_Shopping":"مواصلة التسوق"
+  },
+  "auth": {
+    "invalid_credentials": "بيانات اعتماد غير صالحة",
+    "welcome": "مرحباً",
+    "sign_in_title": "تسجيل الدخول إلى حسابك",
+    "sign_up_title": "إنشاء حساب",
+    "sign_in": "تسجيل الدخول",
+    "sign_up": "إنشاء حساب",
+    "email": "عنوان البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "confirm_password": "تأكيد كلمة المرور",
+    "full_name": "الاسم الكامل",
+    "forgot_password": "نسيت كلمة المرور؟",
+    "continue_with_google": "متابعة مع جوجل",
+    "no_account": "ليس لديك حساب؟",
+    "have_account": "هل لديك حساب بالفعل؟",
+    "signing_in": "جاري تسجيل الدخول...",
+    "creating_account": "جاري إنشاء الحساب...",
+    "welcome_back": "مرحباً بعودتك!",
+    "account_created": "تم إنشاء الحساب!",
+    "redirecting": "جاري إعادة التوجيه...",
+    "switching_to_login": "جاري التبديل إلى تسجيل الدخول...",
+    "email_required": "البريد الإلكتروني مطلوب",
+    "email_invalid": "البريد الإلكتروني غير صالح",
+    "password_required": "كلمة المرور مطلوبة",
+    "password_min": "على الأقل 8 أحرف",
+    "name_required": "الاسم مطلوب",
+    "passwords_no_match": "كلمات المرور غير متطابقة",
+    "authentication_failed": "فشل في المصادقة",
+    "signup_failed": "فشل في إنشاء الحساب"
+  }
+}
