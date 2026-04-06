@@ -40,7 +40,7 @@ const PlaceOrderStep = ({}: { currentStep?: number } = {}) => {
 
           <Link
             href={`/${locale}/account/orders`}
-            className="px-6 py-3 rounded-xl bg-shop_dark text-white font-medium hover:opacity-90 transition"
+            className="px-6 py-3 rounded-xl border border-gray-300 font-medium hover:bg-gray-100 transition"
           >
             {t("Payment.Go_to_My_Orders")}
           </Link>

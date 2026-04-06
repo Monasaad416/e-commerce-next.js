@@ -18,6 +18,17 @@ export const API_URLS = {
     PAGE_CONTENT: {
         GET_PAGE_CONTENT: (lang: string = 'ar', page: string) => `${API_BASE_URL}/${lang}/page-content/${page}`,
     },
+    CART: {
+        GET_CART: (lang: string = 'en') => `${API_BASE_URL}/${lang}/cart`,
+        ADD_TO_CART: (lang: string = 'en') => `${API_BASE_URL}/${lang}/cart/add`,
+        REMOVE_FROM_CART: (lang: string = 'en', cartItemId: string) => `${API_BASE_URL}/${lang}/cart/remove-item/${cartItemId}`,
+        UPDATE_CART: (lang: string = 'en') => `${API_BASE_URL}/${lang}/cart/update`,
+        CLEAR_CART: (lang: string = 'en') => `${API_BASE_URL}/${lang}/cart/delete`,
+    },
+    ORDER:{
+        GET_ALL_ORDERS : (lang: string = 'en') => `${API_BASE_URL}/${lang}/orders`,
+        CREATE_ORDER : (lang: string = 'en') => `${API_BASE_URL}/${lang}/create-order`,
+    },
     BASE_URL: API_BASE_URL,
     STORAGE_BASE_URL: STORAGE_BASE_URL,
 };

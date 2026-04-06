@@ -4,28 +4,48 @@ export interface ICartItem {
   type: string,
   price: number,
   qty: number,
-  images: {
+  total?: number,
+  subtotal?: number,
+  tax?: number,
+  discountPrice?: number,
+  images?: {
     featured_image: string,
     images: string[]
   },
-  selection: {
+  selection?: {
     [key: string]: string | number | boolean | null | undefined;
-    image?: string;  // Make image optional
+    image?: string; 
+    product_variant_id?: string
   };
-  image: string
+  image: string,
+  product_variant_id?: string
+
 }
     
 
 export interface ICartStoreState {
     cart: ICartItem[];
+    cartId: number | null;
     hasHydrated: boolean;
 }
 
 export interface ICartStoreActions {
-    addToCart: (product: ICartItem) => void;
-    removeFromCart: (productId: string) => void;
-    updateCart: (newCart: ICartItem[]) => void;
-    clearCart: () => void;
-    incrementQuantity: (productId: string, selection: object) => void;
-    decrementQuantity: (productId: string, selection: object) => void;
+  setHasHydrated: (v: boolean) => void
+
+  addToCart: (item: ICartItem) => Promise<void>   
+
+  removeFromCart: (
+    cartItemId:string,
+    selection?: object
+  ) => Promise<void>
+
+  updateCart: (newCart: ICartItem[]) => Promise<void>
+
+  clearCart: () => Promise<void>
+
+  incrementQuantity: (productId: string) => Promise<void>
+
+  decrementQuantity: (productId: string) => Promise<void>
+
+  fetchCart: () => Promise<void>   
 }

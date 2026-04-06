@@ -4,7 +4,6 @@ export const IShipping = Z.object({
     lastName: Z.string().min(2, "Last name must be at least 2 characters long"),
     address: Z.string().min(2, "Address must be at least 2 characters long"),
     city: Z.string().min(2, "City must be at least 2 characters long"),
-
     zipCode: Z.string().min(2, "Zip code must be at least 2 characters long"),
     country: Z.string().min(2, "Country must be at least 2 characters long"),
     phone: Z.string().min(10, "Phone must be between 10 and 15 characters long")

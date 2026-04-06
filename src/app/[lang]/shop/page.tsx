@@ -145,11 +145,6 @@ const Shop = ({ params }: ShopProps) => {
   }, [products, lang]);
 
 
-
-
-console.log('availableColors',availableColors)
-
-
     if (isLoading) return <p className="p-6">Loading...</p>;
     if (error) return <p className="p-6">Something went wrong</p>;
 

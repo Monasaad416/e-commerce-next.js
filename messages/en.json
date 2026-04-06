@@ -6,9 +6,19 @@
     "Shop": "Shop",
     "Wishlist": "Wishlist",
     "Cart": "Cart",
-    "Account": "حسابي",
+    "Account": "Account",
     "SignIn": "Sign In",
-    "SignUp": "Sign Up"
+    "SignUp": "Sign Up",
+    "Logout": "Logout",
+    "Profile": "Profile",
+    "Orders": "Orders"
+  },
+  "Orders": {
+    "Orders": "Orders",
+    "OrderDetails": "Order Details",
+    "OrderStatus": "Order Status",
+    "OrderDate": "Order Date",
+    "OrderTotal": "Order Total"
   },
   "Home": {
     "title": "Home",
@@ -40,7 +50,10 @@
     "Payment": "Payment",
     "Review": "Review",
     "AddToCart": "Add to Cart",
-    "AddToWishlist": "Add to Wishlist"
+    "AddToWishlist": "Add to Wishlist",
+    "Back": "Back",
+    "Continue": "Continue",
+    "PlaceOrder": "Place Order"
   },
   "Account": {
     "MyAccount": "My Account",
@@ -114,5 +127,17 @@
     "passwords_no_match": "Passwords don't match",
     "authentication_failed": "Authentication failed",
     "signup_failed": "Sign up failed"
+  },
+  "Shipping": {
+    "FirstName": "First Name",
+    "LastName": "Last Name",
+    "Address": "Address",
+    "City": "City",
+    "PostalCode": "Postal Code",
+    "Country": "Country",
+    "Region": "Region",
+    "PhoneNumber": "Phone Number",
+    "ApartmentSuite": "Apartment/Suite",
+    "ZipCode": "Zip Code"
   }
 }

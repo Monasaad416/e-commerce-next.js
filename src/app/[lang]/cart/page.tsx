@@ -4,12 +4,19 @@ import { useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import OrderDetailsStep from '@/components/website/CartSteps/OrderDetailsStep';
 import ShippingStep, { ShippingStepRef } from '@/components/website/CartSteps/ShippingStep';
-import PaymentStep from '@/components/website/CartSteps/PaymentStep';
 import PlaceOrderStep from '@/components/website/CartSteps/PlaceOrderStep';
 import OrderSummary from '@/components/website/CartSteps/OrderSummary';
 import { ShippingType } from '@/interfaces/ShippingType';
 // import { useCartStore } from '@/stores/cartStore';
 import { useTranslations, useLocale } from 'next-intl';
+import { useLocaleStore } from '@/stores/localeStore';
+import { API_URLS } from '@/app/Services/Urls';
+import { OrderResponse } from '@/interfaces/OrderType';
+import { useCartStore } from '@/stores/cartStore';
+import getAuthHeaders from '@/lib/getAuthHeaders';
+import { useForm } from "react-hook-form";
+import { Button } from '@/components/ui/button';
+
 
 const Cart = () => {
     const router = useRouter();
@@ -20,6 +27,9 @@ const Cart = () => {
     const [formData, setFormData] = useState<ShippingType | null>(null);
     // const {removeFromCart} = useCartStore();
     const t = useTranslations();
+    const { cart, clearCart } = useCartStore();
+
+
 
 
     // const handleRemoveFromCart = (productId: string) => {
@@ -30,8 +40,7 @@ const Cart = () => {
     const steps = [
         { id: 1, label: t("Cart.Details") },
         { id: 2, label: t("Cart.Address") },
-        { id: 3, label: t("Cart.Payment") },
-        { id: 4, label: t("Cart.Review") },
+        { id: 3, label: t("Cart.Review") },
     ];
 
     const handleBack = () => {
@@ -48,30 +57,77 @@ const Cart = () => {
             router.push(`/${locale}/cart?step=${activeStep - 1}`);
         }
     };
-    
-// Update handleNext to handle the new return type
+
+    const placeOrder = async () => {
+        try {
+            const lang = useLocaleStore.getState().lang;
+            const API_URL = API_URLS.ORDER.CREATE_ORDER(lang);
+
+            // // Get shipping data here, not at component level
+            // const shippingData = formData || shippingRef.current?.data;
+
+
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    cart: cart,
+                    shipping: formData,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data: OrderResponse = await response.json();
+            // console.log('data',data);
+            // console.log('cart',cart)
+            clearCart();
+
+            return data.data;
+        } catch (error) {
+            console.error('Error creating order:', error);
+            return null;
+        }
+    };
+
+    // Update handleNext to handle the new return type
 const handleNext = async () => {
     if (activeStep === 2) {
+        
         if (!shippingRef.current) {
-            console.error('Shipping ref is not attached');
             return;
         }
         
         const { valid, data } = await shippingRef.current.validate();
+        
         if (!valid || !data) {
-            console.log('Validation failed');
+            console.error('Validation failed');
             return;
         }
         
-        // Save the valid data
+        // Save valid data to form state
         setFormData(data);
-        console.log('formData', formData);
+        
+        // Only proceed to order if validation passes
+        if (valid && data) {
+            await placeOrder();
+        } else {
+            console.log('Validation failed, not placing order');
+        }
     }
-    
+
     if (activeStep < steps.length) {
         router.push(`/${locale}/cart?step=${activeStep + 1}`);
     }
 };
+
+    const handlePlaceOrder = async () => {
+        await placeOrder();
+        // Then navigate to confirmation or orders page
+        // router.push(`/${locale}/account/orders`);
+    };
     const handleShippingSubmit = (data: ShippingType) => {
         setFormData(data);
         router.push(`/${locale}/cart?step=3`);
@@ -131,52 +187,48 @@ const handleNext = async () => {
             {/* Step Content */}
             <div className="flex flex-col md:flex-row w-full gap-6">
                 {/* Cart Items - Full width on mobile, 2/3 on larger screens */}
-                <div className={`w-full ${activeStep != 4 ? 'md:w-2/3' : 'md:w-full'} bg-white rounded-lg shadow-sm p-6`}>
+                <div className={`w-full ${activeStep != 3 ? 'md:w-2/3' : 'md:w-full'} bg-white rounded-lg shadow-sm p-6`}>
                     {activeStep === 1 && (
-                        <OrderDetailsStep  currentStep={activeStep}/>
+                        <OrderDetailsStep currentStep={activeStep} />
                     )}
 
-                  {activeStep === 2 && (
-                        <ShippingStep 
+                    {activeStep === 2 && (
+                        <ShippingStep
                             ref={shippingRef}
                             currentStep={activeStep}
-                            onNext={handleShippingSubmit} 
+                            onNext={handleShippingSubmit}
                             formData={formData}
                         />
                     )}
-
-                    {activeStep === 3 &&(
-                        <PaymentStep currentStep={activeStep}/>
-                    )}
-                    {activeStep === 4 && 
-                     <PlaceOrderStep currentStep={activeStep}/>
+                    {activeStep === 3 &&
+                        <PlaceOrderStep currentStep={activeStep} />
                     }
                 </div>
 
-                {activeStep != 4 && <div className="w-full md:w-1/3">
-                    <OrderSummary/>
+                {activeStep != 3 && <div className="w-full md:w-1/3">
+                    <OrderSummary />
                 </div>}
             </div>
 
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
-                <button
+                <Button
                     onClick={handleBack}
                     className={`px-6 py-2 rounded-md ${activeStep <= 1
-                            ? 'invisible'
-                            : 'bg-shop_white text-shop_black hover:bg-shop_light'
+                        ? 'invisible'
+                        : 'bg-shop_white text-shop_black hover:bg-shop_light'
                         }`}
                     disabled={activeStep === 1}
                 >
-                    Back
-                </button>
-                <button
+                    {t('Cart.Back')}
+                </Button>
+                <Button
                     onClick={handleNext}
                     className="px-6 py-2 bg-shop_black text-white rounded-md hover:bg-shop_light transition-colors"
                     disabled={activeStep > steps.length}
                 >
-                    {activeStep === steps.length ? 'Place Order' : 'Continue'}
-                </button>
+                    {activeStep === 2 ? t('Cart.PlaceOrder') : t('Cart.Continue')}
+                </Button>
             </div>
         </div>
     );

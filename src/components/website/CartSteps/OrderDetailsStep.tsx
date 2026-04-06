@@ -8,8 +8,8 @@ import { useLocalizedValue } from '@/hooks/useLocalizedValue';
 
 const OrderDetailsStep = ({}: { currentStep?: number } = {}) => {
     const {cart,removeFromCart} = useCartStore();
-    const handleRemoveFromCart = (productId: string) => {
-        removeFromCart(productId);
+    const handleRemoveFromCart = (cartItemId: string) => {
+        removeFromCart(cartItemId);
     };
     const t = useTranslations();
     const tValue = useLocalizedValue();

@@ -1,4 +1,4 @@
-import { AttributeValue, IProduct } from "@/interfaces/productType";
+import { IProduct } from "@/interfaces/productType";
 import { Card, CardContent } from "@/components/ui/card";
 import { UseProductSelection } from "@/hooks/useProductSelection";
 import noImage from "@/assets/imgs/no-image.jpg";
@@ -7,8 +7,6 @@ import AddToCartBtn from "../AddToCartBtn";
 import { resolveImageUrl } from "@/lib/media";
 import { useLocalizedValue } from "@/hooks/useLocalizedValue";
 import Link from "next/link";
-import { useProductAttributes } from "@/hooks/useProductAttribute";
-import { GroupedAttributes } from "@/interfaces/GroupedAttributesType";
 import { useLocale } from "next-intl";
 import { IoHeartOutline } from "react-icons/io5";
 
@@ -16,29 +14,45 @@ import { IoHeartOutline } from "react-icons/io5";
 /* ---------------- Main Component ---------------- */
 
 export default function ProductCard({ product }: { product: IProduct }) {
-  const { selection, changeType } = UseProductSelection(product);
+  const { selection ,setAttribute,matchedVariant} = UseProductSelection(product);
   const tValue = useLocalizedValue();
   const locale = useLocale();
-  const { groupedAttributes, selectedAttributes, selectAttribute } =
-    useProductAttributes(product);
+
+  const handleAttributeChange = (attrKey: string, attrValue: string) => {
+    setAttribute(attrKey, attrValue);
+  };
+
 
   /* -------- Image logic -------- */
 
   let featuredImage: string | undefined;
   let price: number | undefined;
+  let discountPrice: number | undefined;
 
-  if (product.type === "simple") {
+  if (product.type === "simple" && product.images?.length > 0) {
     featuredImage = resolveImageUrl(
       product.images?.find((img) => img?.is_featured)?.image_path
     );
     price = product?.selling_price;
+    discountPrice = product?.discount_price;
   }
 
   if (product.type === "variable") {
+    const firstVariant = product.variants?.[0];
     featuredImage = resolveImageUrl(product.variants?.[0]?.featured_image);
     price = product.variants?.[0]?.selling_price;
+    discountPrice = product.variants?.[0]?.discount_price;
   }
 
+    // Create selection with first variant for cart
+  const cardSelection = product.type === "variable" && product.variants?.[0] 
+    ? {
+        ...selection,
+        product_variant_id: product.variants[0].id
+      }
+    : selection;
+
+  
   /* -------- Render -------- */
 
   return (
@@ -78,8 +92,7 @@ export default function ProductCard({ product }: { product: IProduct }) {
 
           <AddToCartBtn
             product={product}
-            selection={selection}
-            changeType={changeType}
+            selection={cardSelection}
             qty={1}
           /> 
         </div>

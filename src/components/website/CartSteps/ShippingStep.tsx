@@ -1,10 +1,12 @@
 import { forwardRef, useEffect, useImperativeHandle } from "react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { IShipping, ShippingType } from "@/interfaces/ShippingType";
+import { useTranslations } from "next-intl";
+import { useForm } from "react-hook-form";
 
 export interface ShippingStepRef {
     validate: () => Promise<{ valid: boolean; data: ShippingType | null }>;
+    data?: ShippingType | null; // Add this property
 }
 
 interface ShippingStepProps {
@@ -17,6 +19,7 @@ const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(({ onNext, f
     const {
         register,
         handleSubmit,
+        getValues,
         formState: { errors },
         trigger,
         reset
@@ -26,6 +29,8 @@ const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(({ onNext, f
         defaultValues: formData || {}
     });
 
+    const t = useTranslations('Shipping');
+
     // Reset form when formData changes
     useEffect(() => {
         if (formData) {
@@ -33,29 +38,43 @@ const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(({ onNext, f
         }
     }, [formData, reset]);
 
-useImperativeHandle(ref, () => ({
+    useImperativeHandle(ref, () => ({
     async validate() {
-        const isValid = await trigger();
-        if (!isValid) {
+        try {
+            // First trigger validation
+            const isValid = await trigger();
+            
+            if (!isValid) {
+                return { valid: false, data: null };
+            }
+
+            // Get values directly from react-hook-form
+            const values = getValues();
+            
+            // Ensure all required fields have values
+            const shippingData: ShippingType = {
+                firstName: values.firstName || '',
+                lastName: values.lastName || '',
+                address: values.address || '',
+                city: values.city || '',
+                zipCode: values.zipCode || '',
+                country: values.country || '',
+                phone: values.phone || '',
+                apartment: values.apartment || undefined,
+            };
+            
+
+            
+            return { 
+                valid: true, 
+                data: shippingData
+            };
+        } catch (error) {
+            console.error('Validation error:', error);
             return { valid: false, data: null };
         }
-
-        // Get form values directly from the form
-        const form = document.getElementById('shipping-form') as HTMLFormElement;
-        if (!form) {
-            return { valid: false, data: null };
-        }
-
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries()) as unknown as ShippingType;
-        
-        return { 
-            valid: true, 
-            data 
-        };
-    }
-}), [trigger]);
-
+    },
+}), [trigger, getValues, errors]);
     const onSubmit = (data: ShippingType) => {
         onNext(data);
     };
@@ -79,19 +98,13 @@ useImperativeHandle(ref, () => ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                First Name
+                                {t('FirstName')}
                                 {errors.firstName && (
                                     <span className="text-red-500 text-xs ml-1">*</span>
                                 )}
                             </label>
                             <input
-                                {...register('firstName', { 
-                                    required: 'First name is required',
-                                    minLength: {
-                                        value: 2,
-                                        message: 'Must be at least 2 characters'
-                                    }
-                                })}
+                                {...register('firstName')}
                                 type="text"
                                 placeholder="John"
                                 className={getInputClasses('firstName')}
@@ -102,19 +115,13 @@ useImperativeHandle(ref, () => ({
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Last Name
+                                {t('LastName')}
                                 {errors.lastName && (
                                     <span className="text-red-500 text-xs ml-1">*</span>
                                 )}
                             </label>
                             <input
-                                {...register('lastName', { 
-                                    required: 'Last name is required',
-                                    minLength: {
-                                        value: 2,
-                                        message: 'Must be at least 2 characters'
-                                    }
-                                })}
+                                {...register('lastName')}
                                 type="text"
                                 placeholder="Doe"
                                 className={getInputClasses('lastName')}
@@ -128,15 +135,13 @@ useImperativeHandle(ref, () => ({
                     {/* Address */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Street Address
+                            {t('Address')}
                             {errors.address && (
                                 <span className="text-red-500 text-xs ml-1">*</span>
                             )}
                         </label>
                         <input
-                            {...register('address', {
-                                required: 'Street address is required'
-                            })}
+                            {...register('address')}
                             type="text"
                             placeholder="123 Main St"
                             className={getInputClasses('address')}
@@ -147,59 +152,36 @@ useImperativeHandle(ref, () => ({
                     </div>
 
                     {/* Apartment/Suite (Optional) */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Apartment, suite, etc. (optional)
-                        </label>
-                        <input
-                            {...register('apartment')}
-                            type="text"
-                            placeholder="Apt 4B"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-shop_light focus:border-shop_light transition-all"
-                        />
-                        {errors.apartment && (
-                            <p className="mt-1 text-sm text-red-600">{errors.apartment.message}</p>
-                        )}
-                    </div>
-
-                    {/* City, State, ZIP */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        <div className="md:col-span-2">
+                    {/* Zip Code */}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                City
-                                {errors.city && (
+                                {t('ApartmentSuite')}
+                                {errors.apartment && (
                                     <span className="text-red-500 text-xs ml-1">*</span>
                                 )}
                             </label>
                             <input
-                                {...register('city', {
-                                    required: 'City is required'
-                                })}
+                                {...register('apartment')}
                                 type="text"
-                                placeholder="New York"
-                                className={getInputClasses('city')}
+                                placeholder="John"
+                                className={getInputClasses('apartment')}
                             />
-                            {errors.city && (
-                                <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
+                            {errors.apartment && (
+                                <p className="mt-1 text-sm text-red-600">{errors.apartment.message}</p>
                             )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                ZIP/Postal Code
+                                {t('ZipCode')}
                                 {errors.zipCode && (
                                     <span className="text-red-500 text-xs ml-1">*</span>
                                 )}
                             </label>
                             <input
-                                {...register('zipCode', {
-                                    required: 'ZIP code is required',
-                                    pattern: {
-                                        value: /^\d{5}(-\d{4})?$/,
-                                        message: 'Please enter a valid ZIP code'
-                                    }
-                                })}
+                                {...register('zipCode')}
                                 type="text"
-                                placeholder="10001"
+                                placeholder="Doe"
                                 className={getInputClasses('zipCode')}
                             />
                             {errors.zipCode && (
@@ -208,46 +190,58 @@ useImperativeHandle(ref, () => ({
                         </div>
                     </div>
 
-                    {/* Country/Region */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Country/Region
-                            {errors.country && (
-                                <span className="text-red-500 text-xs ml-1">*</span>
+
+                    {/* City, State, ZIP */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {t('City')}
+                                {errors.city && (
+                                    <span className="text-red-500 text-xs ml-1">*</span>
+                                )}
+                            </label>
+                            <input
+                                {...register('city')}
+                                type="text"
+                                placeholder="New York"
+                                className={getInputClasses('city')}
+                            />
+                            {errors.city && (
+                                <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
                             )}
-                        </label>
-                        <select
-                            {...register('country', {
-                                required: 'Country is required'
-                            })}
-                            className={getInputClasses('country')}
-                        >
-                            <option value="">Select a country/region</option>
-                            <option value="US">United States</option>
-                            <option value="CA">Canada</option>
-                            <option value="UK">United Kingdom</option>
-                        </select>
-                        {errors.country && (
-                            <p className="mt-1 text-sm text-red-600">{errors.country.message}</p>
-                        )}
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {t('Country')}
+                                {errors.country && (
+                                    <span className="text-red-500 text-xs ml-1">*</span>
+                                )}
+                            </label>
+                            <input
+                                {...register('country')}
+                                type="text"
+                                placeholder="New York"
+                                className={getInputClasses('country')}
+                            />
+                            {errors.country && (
+                                <p className="mt-1 text-sm text-red-600">{errors.country.message}</p>
+                            )}
+                        </div>
+
                     </div>
+
+
 
                     {/* Phone Number */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Phone Number
+                            {t('PhoneNumber')}
                             {errors.phone && (
                                 <span className="text-red-500 text-xs ml-1">*</span>
                             )}
                         </label>
                         <input
-                            {...register('phone', {
-                                required: 'Phone number is required',
-                                pattern: {
-                                    value: /^[0-9]{10,15}$/,
-                                    message: 'Please enter a valid phone number (10-15 digits)'
-                                }
-                            })}
+                            {...register('phone')}
                             type="tel"
                             placeholder="(123) 456-7890"
                             className={getInputClasses('phone')}

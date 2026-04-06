@@ -47,7 +47,6 @@ const Home = ({ params: paramsPromise }: HomeProps) => {
     isError: isContentError,
     error: contentError,
   } = usePageContent( params?.lang || 'en','home');
-  console.log('page content:', content);
 
   function stripHtml(html: string) {
     return html.replace(/<[^>]*>?/gm, '');

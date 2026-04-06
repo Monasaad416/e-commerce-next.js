@@ -21,7 +21,7 @@ export default function ProductsList({ limit, products: propProducts }: Products
     locale: 'en'
   });
 
-  console.log(data?.data?.products)
+
   // Use passed products or data from the query
   const products = propProducts || data?.data?.products || [];
 

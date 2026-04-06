@@ -20,8 +20,9 @@ export const auth = betterAuth({
         password: string
       }
 
+
       if (credentials?.email && credentials?.password) {
-              const t = await getTranslations("auth")
+        const t = await getTranslations("auth")
         try {
           const res = await fetch(API_URL, {
             method: "POST",
@@ -33,6 +34,8 @@ export const auth = betterAuth({
             }),
           })
 
+
+          
           if (!res.ok) {
             const err = await res.json().catch(() => ({}))
             throw new Error(err?.message ?? t("Invalid_Credentials"))
@@ -40,11 +43,15 @@ export const auth = betterAuth({
 
           const data = await res.json()
 
+
           return {
-            id: data.user.id,
-            email: data.user.email,
-            name: data.user.name,
-            authToken: data.token,
+            id: data?.user.id,
+            email: data?.user.email,
+            name: data?.user.name,
+            token: data.token,
+            session: {
+              token: data.token,
+            },
           }
         } catch (error: unknown) {
           throw new Error(

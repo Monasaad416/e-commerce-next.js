@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, JSX } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations, useLocale } from "next-intl"
 import { authClient } from "@/lib/auth-client"
+import { useAuthStore } from "@/stores/authStore"
 
 /* ── Types ── */
 type AuthMode = "login" | "signup"
@@ -44,6 +45,8 @@ const GoogleIcon = () => (
 
 /* ── Field Component ── */
 import React from "react"
+import { API_URLS } from "@/app/Services/Urls"
+
 
 interface FieldProps {
   label: string
@@ -135,9 +138,14 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [name, setName] = useState("")
+
   const [errors, setErrors] = useState<FormErrors>({})
   const overlayRef = useRef<HTMLDivElement>(null)
+
+  const setToken = useAuthStore((state) => state.setToken)
+const setName = useAuthStore((state) => state.setName)
+const setHasHydrated = useAuthStore((state) => state.setHasHydrated)
+
 
   // Sync mode with prop
   useEffect(() => { setMode(defaultMode) }, [defaultMode])
@@ -173,7 +181,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
     if (!password) e.password = t("password_required")
     else if (password.length < 8) e.password = t("password_min")
     if (mode === "signup") {
-      if (!name.trim()) e.name = t("name_required")
+
       if (password !== confirmPassword) e.confirmPassword = t("passwords_no_match")
     }
     setErrors(e)
@@ -186,21 +194,36 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
     setLoading(true)
     setGlobalError(null)
 
-    if (mode === "login") {
-      const { error } = await authClient.signIn.email(
-        { email, password, rememberMe: true },
-        {
-          onSuccess: () => {
-            setSuccess(true)
-            setTimeout(() => { onClose(); router.push(`/${locale}`); router.refresh() }, 900)
-          },
-          onError: (ctx) => setGlobalError(ctx.error.message ?? t("authentication_failed")),
-        }
-      )
-      if (error) setGlobalError(error.message ?? t("authentication_failed"))
-    } else {
+
+   if (mode === "login") {
+  const res = await fetch(API_URLS.AUTHENTECATEION.LOGIN(locale), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  })
+
+  const result = await res.json()  // ✅ named "result" to avoid any conflict
+
+  if (!res.ok) {
+    setGlobalError(result?.message ?? t("authentication_failed"))
+    return
+  }
+
+  // Laravel returns { id, email, name, token } at root level
+  setToken(result.token)
+  setName(result.name ?? null)
+  setHasHydrated(true)
+
+  setSuccess(true)
+  setTimeout(() => {
+    onClose()
+    router.push(`/${locale}`)
+    router.refresh()
+  }, 900)
+}
+     else {
       const { error } = await authClient.signUp.email(
-        { email, password, name },
+        { email, password, name: "User" },
         {
           onSuccess: () => {
             setSuccess(true)
