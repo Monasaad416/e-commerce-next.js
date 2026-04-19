@@ -49,12 +49,13 @@
 }
 
 @theme {
-  --color-shop_medium_primary: #353535;
-  --color-shop_dark_primary: #211C24;
-  --color-shop_light_primary: #F6F6F6;
-  --color-shop_black: #000000;
-  --color-shop_white: #ffffff;
-  --color-shop_light_gray:#ededed;
+  --color-shop_medium_primary: #3d2b1f;
+  --color-shop_dark_primary: #1a120e;
+  --color-shop_light_primary: #f7f1e8;
+  --color-shop_secondary: #c9a96e;
+  --color-shop_black: #120d0a;
+  --color-shop_white: #fff8ef;
+  --color-shop_light_gray: #f2e6d9;
 }
 
 :root {
@@ -90,6 +91,8 @@
   --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
   --sidebar-border: oklch(0.923 0.003 48.717);
   --sidebar-ring: oklch(0.709 0.01 56.259);
+
+
 }
 
 .dark {
@@ -159,4 +162,9 @@
   width: 16px !important;
   height: 16px !important;
   border-radius: 9999px !important;
+}
+
+
+.PhoneInputCountryIcon {
+  margin: 10px;
 }

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+  <rect width="100%" height="100%" fill="#000000"></rect>
+  <text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" font-size="26" font-family="Arial" font-weight="700" fill="#12ea79">
+    TZ
+  </text>
+</svg>

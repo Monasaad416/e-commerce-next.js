@@ -17,6 +17,7 @@ import { GroupedAttributeOption } from "@/interfaces/GroupedAttributesType";
 import AttributeBtn from "@/components/website/AttributeBtn";
 import getBackgroundColor from "@/lib/getBackgroundColor";
 import AddToWishlistBtn from "@/components/website/AddToWishlistBtn";
+import CustomLoader from "@/components/customLoader/CustomLoader";
 
 export default function ProductClient({ productSlug }: { productSlug: string }) {
   const router = useRouter();
@@ -190,7 +191,7 @@ export default function ProductClient({ productSlug }: { productSlug: string }) 
   }, [product, matchedVariant]);
 
   // ---------------- Render ----------------
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <CustomLoader />;
 
   if (error || !product) {
     return (

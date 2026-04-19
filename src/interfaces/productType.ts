@@ -3,6 +3,9 @@ import { IProductImage } from "./ProductImageType";
 export interface IProduct {
 category_id:string;
 category_slug:string;
+category_name:{
+    [key: string]: string;
+};
 description:string;
 discount_price:number;
 id:string;

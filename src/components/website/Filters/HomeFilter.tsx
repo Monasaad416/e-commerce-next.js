@@ -15,25 +15,60 @@ const HomeFilter = () => {
   const isRTL = locale === "ar";
 
   return (
-    <div className="w-full flex justify-center mt-12 mb-6">
+    <div className="mb-6 mt-8 flex w-full justify-center sm:mt-12">
       <div
-        className={`flex items-center bg-gray-100 rounded-full p-2 shadow-sm ${
+        className={`relative flex w-full max-w-2xl items-center justify-center gap-2 rounded-full border px-2 py-2 ${
           isRTL ? "flex-row-reverse" : ""
         }`}
+        style={{
+          backgroundColor: "#f7f1e8",
+          borderColor: "#dcc3a0",
+          boxShadow: "0 14px 34px rgba(61,43,31,0.14)",
+        }}
+        role="tablist"
+        aria-label={locale === "ar" ? "تصفية المنتجات" : "Product highlights"}
       >
-        {filters.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => setActive(item.key)}
-            className={`relative px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 ${
-              active === item.key
-                ? "bg-shop_dark text-shop_primary shadow-md"
-                : "text-muted-foreground hover:text-shop_primary"
-            }`}
-          >
-            {locale === "ar" ? item.label_ar : item.label_en}
-          </button>
-        ))}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-[6px] rounded-full border border-dashed"
+          style={{ borderColor: "#d5b894" }}
+        />
+        {filters.map((item) => {
+          const isActive = active === item.key;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setActive(item.key)}
+              className={`relative z-10 min-h-11 flex-1 rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.02em] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shop_secondary focus-visible:ring-offset-2 sm:flex-none sm:px-8 sm:text-sm ${
+                isActive
+                  ? "scale-[1.01] shadow-lg"
+                  : "text-[#7b634a] hover:-translate-y-[1px] hover:bg-[#efe2d3] hover:text-[#3d2b1f]"
+              }`}
+              style={
+                isActive
+                  ? {
+                      background:
+                        "linear-gradient(135deg, #2f1f14 0%, #3d2b1f 40%, #533a2a 100%)",
+                      color: "#f8e9d6",
+                      boxShadow: "0 10px 22px rgba(61,43,31,0.34)",
+                    }
+                  : undefined
+              }
+            >
+              {isActive && (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-[3px] rounded-full border border-dashed"
+                  style={{ borderColor: "#c9a67b" }}
+                />
+              )}
+              {locale === "ar" ? item.label_ar : item.label_en}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

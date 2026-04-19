@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Saudi Arabia flag">
+  <rect width="64" height="64" fill="#006c35"/>
+  <rect x="12" y="22" width="40" height="4" rx="2" fill="#fff"/>
+  <rect x="14" y="30" width="36" height="3.5" rx="1.75" fill="#fff"/>
+  <rect x="18" y="40" width="28" height="4" rx="2" fill="#fff"/>
+  <rect x="20" y="45" width="20" height="2.5" rx="1.25" fill="#fff"/>
+</svg>

@@ -11,14 +11,28 @@
     "SignUp": "Sign Up",
     "Logout": "Logout",
     "Profile": "Profile",
-    "Orders": "Orders"
+    "Orders": "Orders",
+    "Logo": "ORCHID",
+    "SearchPlaceholder": "Search products…",
+    "Support": "Support",
+    "ShippingReturns": "Shipping & Returns",
+    "Privacy": "Privacy Policy",
+    "About": "About Us",
+    "OpenMenu": "Open menu",
+    "MenuTitle": "Menu"
   },
   "Orders": {
     "Orders": "Orders",
     "OrderDetails": "Order Details",
     "OrderStatus": "Order Status",
     "OrderDate": "Order Date",
-    "OrderTotal": "Order Total"
+    "OrderTotal": "Order Total",
+    "Order_ID": "Order ID",
+    "Order_Items": "Order Items",
+    "Action": "Action",
+    "Date": "Date",
+    "Status": "Status",
+    "Total": "Total"
   },
   "Home": {
     "title": "Home",
@@ -98,7 +112,7 @@
     "Go_to_My_Orders":"Go to My Orders",
     "Continue_Shopping":"Continue Shopping"
   },
-    "auth": {
+    "Auth": {
     "invalid_credentials": "Invalid credentials",
     "welcome": "Welcome",
     "sign_in_title": "Sign in to your account",
@@ -126,7 +140,10 @@
     "name_required": "Name is required",
     "passwords_no_match": "Passwords don't match",
     "authentication_failed": "Authentication failed",
-    "signup_failed": "Sign up failed"
+    "signup_failed": "Sign up failed",
+    "logout": "Logout",
+    "ProfileInfo": "Profile Information",
+    "You_Must_Login_First": "You must login first"
   },
   "Shipping": {
     "FirstName": "First Name",
@@ -139,5 +156,48 @@
     "PhoneNumber": "Phone Number",
     "ApartmentSuite": "Apartment/Suite",
     "ZipCode": "Zip Code"
+  },
+  "Pages": {
+    "Contact": {
+      "title": "Contact us",
+      "intro": "We usually reply within one business day. For order issues, include your order number.",
+      "emailLabel": "Email",
+      "emailValue": "support@example.com",
+      "phoneLabel": "Phone",
+      "phoneValue": "+966 XX XXX XXXX",
+      "hoursLabel": "Business hours",
+      "hoursValue": "Sun–Thu, 9:00–18:00 (AST)"
+    },
+    "Faq": {
+      "title": "Frequently asked questions",
+      "q1": "How long does delivery take?",
+      "a1": "Most orders ship within 1–2 business days within Saudi Arabia. You will receive tracking details by email or SMS.",
+      "q2": "Can I return an item?",
+      "a2": "Yes. Unused items in original packaging can be returned within 14 days. See Shipping & Returns for details.",
+      "q3": "Which payment methods do you accept?",
+      "a3": "We accept cards (Mada, Visa, Mastercard) and other methods shown at checkout."
+    },
+    "Shipping": {
+      "title": "Shipping & returns",
+      "shippingTitle": "Shipping",
+      "shippingBody": "We deliver across Saudi Arabia. Shipping fees and times are shown at checkout before you pay.",
+      "returnsTitle": "Returns & refunds",
+      "returnsBody": "You may request a return within 14 days of delivery for eligible items. Refunds are processed to your original payment method after inspection.",
+      "vatNote": "Prices include VAT where applicable."
+    },
+    "Privacy": {
+      "title": "Privacy policy",
+      "body": "We collect the information you provide when you register, place an order, or contact us. We use it to process orders, improve our service, and comply with the law. We do not sell your personal data. You may request access or correction of your data by contacting us."
+    }
+  },
+  "Footer": {
+    "Support": "Support",
+    "Contact_Us": "Contact Us",
+    "Shipping": "Shipping",
+    "Returns": "Returns",
+    "FAQ": "FAQ",
+    "QuickLinks": "Quick Links",
+    "AllRightsReserved": "All rights reserved",
+    "BuiltWithLove": "Built with ❤️ for modern ecommerce"
   }
 }

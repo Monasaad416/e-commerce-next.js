@@ -1,9 +1,7 @@
-import { FaRegHeart } from "react-icons/fa6";
+import { HiOutlineHeart } from "react-icons/hi2";
 
 const WishlistIcon = () => {
-  return (
-    <FaRegHeart />
-  )
-}
+  return <HiOutlineHeart className="h-[1.3rem] w-[1.3rem]" />;
+};
 
-export default WishlistIcon
+export default WishlistIcon;

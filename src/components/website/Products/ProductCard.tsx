@@ -14,13 +14,13 @@ import { IoHeartOutline } from "react-icons/io5";
 /* ---------------- Main Component ---------------- */
 
 export default function ProductCard({ product }: { product: IProduct }) {
-  const { selection ,setAttribute,matchedVariant} = UseProductSelection(product);
+  const { selection } = UseProductSelection(product);
   const tValue = useLocalizedValue();
   const locale = useLocale();
 
-  const handleAttributeChange = (attrKey: string, attrValue: string) => {
-    setAttribute(attrKey, attrValue);
-  };
+  // const handleAttributeChange = (attrKey: string, attrValue: string) => {
+  //   setAttribute(attrKey, attrValue);
+  // };
 
 
   /* -------- Image logic -------- */
@@ -55,46 +55,66 @@ export default function ProductCard({ product }: { product: IProduct }) {
   
   /* -------- Render -------- */
 
+  const numericPrice = Number(price ?? 0);
+  const numericDiscount =
+    discountPrice != null ? Number(discountPrice) : undefined;
+  const showStrike =
+    numericDiscount != null &&
+    !Number.isNaN(numericDiscount) &&
+    numericDiscount < numericPrice;
+
   return (
-    <Card className="w-full max-w-sm bg-shop_light_primary hover:shadow-xl transition-shadow">
-      <CardContent className="p-4 flex flex-col h-full">
-        {/* Image + Name */}
+    <Card className="group w-full max-w-sm border border-[#dcc3a0] bg-[#f7f0e6] shadow-[0_10px_28px_rgba(61,43,31,0.12)] transition-shadow duration-300 hover:shadow-[0_16px_36px_rgba(61,43,31,0.18)]">
+      <CardContent className="flex h-full flex-col p-4 sm:p-5">
         <Link
           href={`/${locale}/shop/${product?.slug}`}
-       
           prefetch={false}
-          className="block mb-4 text-foreground no-underline"
+          className="mb-4 block rounded-xl text-foreground no-underline outline-none ring-offset-[#f7f0e6] focus-visible:ring-2 focus-visible:ring-shop_secondary focus-visible:ring-offset-2"
         >
-          <div className="relative w-full aspect-square overflow-hidden rounded-md bg-shop_light">
+          <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-[#e4d1b4] bg-[#fffaf2] p-3 shadow-sm transition duration-300 group-hover:shadow-md sm:p-4">
             <Image
               src={featuredImage || noImage}
               alt={tValue(product?.name)}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover"
+              className="rounded-lg object-cover transition duration-300 group-hover:scale-[1.02]"
               loading="eager"
               unoptimized
             />
-            <IoHeartOutline className="absolute top-4 right-4 text-shop_light_gray text-2xl cursor-pointer" />
+            <span
+              className="pointer-events-none absolute end-3 top-3 text-[#9b8164] transition group-hover:text-shop_secondary sm:end-4 sm:top-4"
+              aria-hidden
+            >
+              <IoHeartOutline className="text-2xl" />
+            </span>
           </div>
 
-          <h3 className="mt-4 text-lg font-semibold hover:text-shop_dark transition-colors line-clamp-2">
+          <p className="mt-3 line-clamp-1 text-xs font-semibold uppercase tracking-wide text-[#9a784f]">
+            {tValue(product?.category_name)}
+          </p>
+          <h3 className="mt-1 line-clamp-2 min-h-[3.5rem] text-base font-semibold leading-snug text-[#3d2b1f] sm:text-lg">
             {tValue(product?.name)}
           </h3>
         </Link>
 
-
-        {/* Price + CTA */}
-        <div className="mt-4 pt-4 border-t flex items-center justify-between">
-          <p className="text-lg font-bold text-shop_dark">
-            ${Number(price ?? 0).toFixed(2)}
-          </p>
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-[#ddc7aa] pt-4">
+          <div className="min-w-0">
+            {showStrike && (
+              <p className="text-sm text-[#9a8369] line-through">
+                ${numericPrice.toFixed(2)}
+              </p>
+            )}
+            <p className="text-lg font-bold text-[#3d2b1f]">
+              $
+              {(showStrike ? numericDiscount : numericPrice).toFixed(2)}
+            </p>
+          </div>
 
           <AddToCartBtn
             product={product}
             selection={cardSelection}
             qty={1}
-          /> 
+          />
         </div>
       </CardContent>
     </Card>

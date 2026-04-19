@@ -109,7 +109,7 @@ function Field({ label, id, type = "text", value, onChange, error, suffix, isRTL
           </div>
         )}
       </div>
-      {/* ✅ animated error message */}
+      {/*animated error message */}
       {error && (
         <span style={{
           fontSize: 12, color: "#ef4444",
@@ -126,7 +126,7 @@ function Field({ label, id, type = "text", value, onChange, error, suffix, isRTL
 export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: AuthModalProps) {
   const router = useRouter()
   const locale = useLocale()
-  const t = useTranslations("auth")
+  const t = useTranslations("Auth")
   const isRTL = locale === "ar"
 
   const [mode, setMode] = useState<AuthMode>(defaultMode)
@@ -143,8 +143,9 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
   const overlayRef = useRef<HTMLDivElement>(null)
 
   const setToken = useAuthStore((state) => state.setToken)
-const setName = useAuthStore((state) => state.setName)
-const setHasHydrated = useAuthStore((state) => state.setHasHydrated)
+  const setAuthEmail = useAuthStore((state) => state.setEmail)
+  const setName = useAuthStore((state) => state.setName)
+  const setHasHydrated = useAuthStore((state) => state.setHasHydrated)
 
 
   // Sync mode with prop
@@ -202,7 +203,7 @@ const setHasHydrated = useAuthStore((state) => state.setHasHydrated)
     body: JSON.stringify({ email, password }),
   })
 
-  const result = await res.json()  // ✅ named "result" to avoid any conflict
+  const result = await res.json()  //named "result" to avoid any conflict
 
   if (!res.ok) {
     setGlobalError(result?.message ?? t("authentication_failed"))
@@ -212,6 +213,7 @@ const setHasHydrated = useAuthStore((state) => state.setHasHydrated)
   // Laravel returns { id, email, name, token } at root level
   setToken(result.token)
   setName(result.name ?? null)
+  setEmail(result.email)
   setHasHydrated(true)
 
   setSuccess(true)

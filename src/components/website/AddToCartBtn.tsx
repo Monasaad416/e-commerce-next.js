@@ -4,7 +4,7 @@ import { IProduct } from "@/interfaces/productType";
 import { Button } from "../ui/button";
 import { useCartStore } from "@/stores/cartStore";
 import { toast } from "react-toastify";
-import { IoCartOutline } from "react-icons/io5";
+import { BsCartPlus } from "react-icons/bs";
 import { useTranslations } from "next-intl";
 import { ICartItem } from "@/interfaces/CartStoreStateType";
 
@@ -59,7 +59,7 @@ const AddToCartBtn = ({
         
         const cartItem = {
             id: String(product?.id),
-            product_variant_id: product?.variants?.[0]?.id || null,
+            product_variant_id: product?.variants?.[0]?.id ? String(product?.variants?.[0]?.id) : undefined,
             name: product?.name,
             price: productPrice,
             discountPrice: discountProductPrice,
@@ -75,12 +75,12 @@ const AddToCartBtn = ({
 
     return (
         <Button
-            className="border border-gray-300 py-6 px-8 font-semibold bg-shop_dark_primary hover:bg-shop_white hover:text-shop_dark_primary transition"
+            className="bg-shop_secondary text-dark transition rounded hover:cursor:pointer"
             onClick={handleAddToCart}
             disabled={disabled}
         >
-            <IoCartOutline className="h-5 w-5" />
-            {t("Cart.AddToCart")}
+            <BsCartPlus className="!w-6 !h-6" />
+
         </Button>
     );
 };

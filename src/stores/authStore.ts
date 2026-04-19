@@ -4,9 +4,11 @@ import { persist, createJSONStorage, type StateStorage } from "zustand/middlewar
 interface AuthState {
   token: string | null
   name: string | null
-  _hasHydrated: boolean                          // ✅ track hydration
+  email: string | null
+  _hasHydrated: boolean                       
   setToken: (token: string | null) => void
   setName: (name: string | null) => void
+  setEmail: (email: string | null) => void
   setHasHydrated: (v: boolean) => void
 }
 
@@ -21,9 +23,11 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       token: null,
       name: null,
+      email: null,
       _hasHydrated: false,
       setToken: (token) => set({ token }),
       setName: (name) => set({ name }),
+      setEmail: (email) => set({ email }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
     {
@@ -32,7 +36,7 @@ export const useAuthStore = create<AuthState>()(
         typeof window !== "undefined" ? localStorage : noopStorage
       ),
       partialize: (state) => ({ token: state.token, name: state.name }),
-      // ✅ called once after localStorage is read
+
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)
       },

@@ -1,8 +1,12 @@
-import { forwardRef, useEffect, useImperativeHandle } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { IShipping, ShippingType } from "@/interfaces/ShippingType";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
+import { CountrySelect, StateSelect, CitySelect } from "react-country-state-city";
+import "react-country-state-city/dist/react-country-state-city.css";
+import 'react-phone-number-input/style.css';
+import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 
 export interface ShippingStepRef {
     validate: () => Promise<{ valid: boolean; data: ShippingType | null }>;
@@ -30,6 +34,13 @@ const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(({ onNext, f
     });
 
     const t = useTranslations('Shipping');
+
+    const [countryId, setCountryId] = useState<string>('');
+    const [stateId, setStateId] = useState<string>('');
+    // inside your component
+const [phone, setPhone] = useState<string | undefined>(undefined);
+const [countryCode, setCountryCode] = useState<string>(''); 
+
 
     // Reset form when formData changes
     useEffect(() => {
@@ -83,11 +94,10 @@ const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(({ onNext, f
 
 
     // Helper function to get input classes
-    const getInputClasses = (fieldName: keyof typeof errors) => 
-        `w-full px-4 py-2 border ${
-            errors[fieldName] ? 'border-red-500' : 'border-gray-300'
-        } rounded-md focus:ring-2 focus:ring-shop_light focus:border-shop_light transition-all`;
-
+const getInputClasses = (fieldName: keyof typeof errors) =>
+  `w-full px-4 py-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-shop_light transition-all ${
+    errors[fieldName] ? 'ring-2 ring-red-500' : ''
+  }`;
 
     return (
         <form id="shipping-form" onSubmit={handleSubmit(onSubmit)} className="py-4">
@@ -193,41 +203,39 @@ const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(({ onNext, f
 
                     {/* City, State, ZIP */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {t('City')}
-                                {errors.city && (
-                                    <span className="text-red-500 text-xs ml-1">*</span>
-                                )}
-                            </label>
-                            <input
-                                {...register('city')}
-                                type="text"
-                                placeholder="New York"
-                                className={getInputClasses('city')}
-                            />
-                            {errors.city && (
-                                <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
-                            )}
-                        </div>
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {t('Country')}
-                                {errors.country && (
-                                    <span className="text-red-500 text-xs ml-1">*</span>
-                                )}
-                            </label>
-                            <input
-                                {...register('country')}
-                                type="text"
-                                placeholder="New York"
-                                className={getInputClasses('country')}
-                            />
-                            {errors.country && (
-                                <p className="mt-1 text-sm text-red-600">{errors.country.message}</p>
-                            )}
-                        </div>
 
+
+                        <CountrySelect
+                        className="border-0"
+                            onChange={(country) => {
+                                console.log(country);
+                                // Check if it's a country object (not a change event)
+                                if (country && typeof country === 'object' && 'id' in country) {
+                                setCountryId(String(country.id));
+                                console.log('Country ID:', String(country.id));
+                                }
+                            }}
+                            placeHolder="Select Country"
+                        />
+
+                        <StateSelect
+                        countryid={Number(countryId)}
+                        onChange={(state) => {
+                            console.log(state);
+                            // Check if it's a state object (not a change event)
+                            if (state && typeof state === 'object' && 'id' in state) {
+                            setStateId(String(state.id)); // ✅ Convert to string
+                            }
+                        }}
+                        placeHolder="Select State"
+                        />
+
+                        <CitySelect
+                        countryid={Number(countryId)}
+                        stateid={Number(stateId)}
+                        onChange={(city) => console.log(city)}
+                        placeHolder="Select City"
+                        />
                     </div>
 
 
@@ -240,11 +248,11 @@ const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(({ onNext, f
                                 <span className="text-red-500 text-xs ml-1">*</span>
                             )}
                         </label>
-                        <input
-                            {...register('phone')}
-                            type="tel"
-                            placeholder="(123) 456-7890"
-                            className={getInputClasses('phone')}
+                        <PhoneInput
+                        international
+                        value={phone}
+                        onChange={(value) => setPhone(value)}
+                          className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-shop_light"
                         />
                         {errors.phone && (
                             <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
