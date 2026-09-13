@@ -1,8 +1,11 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata } from "next";
 import type { AbstractIntlMessages } from "next-intl";
+import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
+
 import ClientLayout from "./client-layout";
 import "../globals.css";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { buildPageMetadata, normalizeLocale } from "@/lib/seo";
+import { getSiteUrl, SITE_NAME } from "@/lib/site";
 
 async function loadMessages(lang: "en" | "ar"): Promise<AbstractIntlMessages> {
   if (lang === "ar") {
@@ -26,38 +29,48 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
-export const metadata = {
-  metadataBase: new URL(siteUrl),
-  title: "ORCHID",
-  description: "HandMade Products Made With Love",
-  icons: {
-    icon: [
-      { url: "/favicon.jpeg", type: "image/jpeg" },
-      { url: "/favicon.ico", sizes: "32x32" },
-    ],
-    apple: [{ url: "/favicon.jpeg", type: "image/jpeg", sizes: "180x180" }],
-  },
-  manifest: "/manifest.json",
-};
-
-export default async function RootLayout({
-  children,
-  params,
-}: {
+type LayoutProps = {
   children: React.ReactNode;
   params: Promise<{ lang: string }>;
-}) {
+};
+
+export async function generateMetadata({
+  params,
+}: LayoutProps): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = normalizeLocale(lang);
+  const base = buildPageMetadata({ lang: locale, page: "home", path: "" });
+
+  return {
+    metadataBase: new URL(getSiteUrl()),
+    ...base,
+    title: {
+      default: base.title as string,
+      template: `%s | ${SITE_NAME}`,
+    },
+    icons: {
+      icon: [
+        { url: "/favicon.jpeg", type: "image/jpeg" },
+        { url: "/favicon.ico", sizes: "32x32" },
+      ],
+      apple: [{ url: "/favicon.jpeg", type: "image/jpeg", sizes: "180x180" }],
+    },
+    manifest: "/manifest.json",
+    applicationName: SITE_NAME,
+  };
+}
+
+export default async function RootLayout({ children, params }: LayoutProps) {
   const resolvedParams = await params;
-  const lang = resolvedParams.lang === "ar" ? "ar" : "en";
+  const lang = normalizeLocale(resolvedParams.lang);
   const dir = lang === "ar" ? "rtl" : "ltr";
   const messages = await loadMessages(lang);
 
   return (
     <html lang={lang} dir={dir}>
-      <body className={`${plusJakarta.variable} ${geistMono.variable} antialiased bg-shop_dark_primary`}>
+      <body
+        className={`${plusJakarta.variable} ${geistMono.variable} antialiased bg-shop_dark_primary`}
+      >
         <ClientLayout
           lang={lang}
           messages={messages}

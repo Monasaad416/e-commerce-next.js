@@ -1,16 +1,16 @@
 import { API_URLS } from "@/app/Services/Urls";
+import { PRODUCTS_REVALIDATE_SECONDS } from "@/lib/revalidate";
 
 /**
  * ISR: how long (seconds) Next.js keeps this `fetch` in the Data Cache on the server.
- * Override with `PRODUCT_REVALIDATE_SECONDS` in `.env`.
+ * Override with `PRODUCT_REVALIDATE_SECONDS` or `PRODUCTS_REVALIDATE_SECONDS` in `.env`.
  *
- * On-demand updates: call `revalidateTag(productCacheTag(lang, slug))` from a Route Handler
- * (e.g. after your Laravel API updates a product).
+ * On-demand updates: POST `/api/revalidate` with tag `product:{lang}:{slug}`.
  */
 export const PRODUCT_REVALIDATE_SECONDS =
   Number(process.env.PRODUCT_REVALIDATE_SECONDS) >= 0
     ? Number(process.env.PRODUCT_REVALIDATE_SECONDS)
-    : 120;
+    : PRODUCTS_REVALIDATE_SECONDS;
 
 /** Tag for `revalidateTag()` — one tag per locale + slug. */
 export function productCacheTag(lang: string, slug: string) {
@@ -31,20 +31,24 @@ export type GetProductResult = Record<string, unknown> | null;
  */
 export async function getProduct(
   lang: string,
-  slug: string
+  slug: string,
 ): Promise<GetProductResult> {
   if (!slug) return null;
 
   const url = API_URLS.PRODUCTS.GET_PRODUCT(lang, slug);
 
-  const response = await fetch(url, {
-    next: {
-      revalidate: PRODUCT_REVALIDATE_SECONDS,
-      tags: [productCacheTag(lang, slug), "products"],
-    },
-  });
+  try {
+    const response = await fetch(url, {
+      next: {
+        revalidate: PRODUCT_REVALIDATE_SECONDS,
+        tags: [productCacheTag(lang, slug), "products"],
+      },
+    });
 
-  if (!response.ok) return null;
+    if (!response.ok) return null;
 
-  return (await response.json()) as Record<string, unknown>;
+    return (await response.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
 }

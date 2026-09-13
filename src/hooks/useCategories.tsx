@@ -10,23 +10,23 @@ interface UseCategoriesOptions extends Omit<UseQueryOptions<CategoriesResponse, 
 
 export function useCategories(options?: UseCategoriesOptions) {
   const locale = useLocale();
-  
+
   return useQuery<CategoriesResponse, Error>({
-    queryKey: ['categories', locale],
+    queryKey: ["categories", locale],
     queryFn: async () => {
-      const data = await fetchCategories();
+      const data = await fetchCategories(locale);
       return {
         success: true,
-        message: 'Categories fetched successfully',
+        message: "Categories fetched successfully",
         data: {
           categories: data?.categories || [],
           pagination: data?.pagination || {
             current_page: 1,
             last_page: 1,
             per_page: 10,
-            total: 0
-          }
-        }
+            total: 0,
+          },
+        },
       } as CategoriesResponse;
     },
     ...options,

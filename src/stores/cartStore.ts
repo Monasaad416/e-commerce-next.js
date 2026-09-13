@@ -5,7 +5,7 @@ import { useLocaleStore } from "./localeStore"
 import { API_URLS } from "@/app/Services/Urls"
 import getAuthHeaders from "@/lib/getAuthHeaders"
 import getAuthToken from "@/lib/getAuthToken"
-import { BackendApiMessage, BackendCartItem, BackendCartPayload } from "@/types/cart"
+import { BackendApiMessage, BackendCartItem, BackendCartPayload, BackendCartResponse } from "@/types/cart"
 import { getCartUnitPrice } from "@/lib/cartPricing"
 
 

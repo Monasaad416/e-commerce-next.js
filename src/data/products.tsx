@@ -4,6 +4,10 @@ import {
   ProductsResponse,
 } from "@/interfaces/productType";
 import { useLocaleStore } from "@/stores/localeStore";
+import {
+  PRODUCTS_REVALIDATE_SECONDS,
+  productsCacheTag,
+} from "@/lib/revalidate";
 
 const EMPTY_PRODUCTS_RESPONSE: ProductsResponse = {
   success: false,
@@ -26,7 +30,7 @@ function resolveLang(localeOverride?: string): string {
 function buildProductsUrl(
   lang: string,
   page: number,
-  perPage?: number
+  perPage?: number,
 ): string {
   const url = new URL(API_URLS.PRODUCTS.GET_PRODUCTS(lang));
   url.searchParams.set("page", String(page));
@@ -37,11 +41,14 @@ function buildProductsUrl(
 async function fetchProductsPage(
   lang: string,
   page: number,
-  perPage?: number
+  perPage?: number,
 ): Promise<ProductsResponse> {
   const response = await fetch(buildProductsUrl(lang, page, perPage), {
-    cache: "no-store",
-    signal: AbortSignal.timeout(15_000),
+    // Server: ISR Data Cache. Browser (React Query): treated as a normal fetch.
+    next: {
+      revalidate: PRODUCTS_REVALIDATE_SECONDS,
+      tags: [productsCacheTag(lang), "products"],
+    },
   });
 
   if (!response.ok) {
@@ -56,7 +63,7 @@ async function fetchProductsPage(
  */
 const fetchProducts = async (
   localeOverride?: string,
-  options?: FetchProductsOptions
+  options?: FetchProductsOptions,
 ): Promise<ProductsResponse> => {
   try {
     const lang = resolveLang(localeOverride);
@@ -75,8 +82,8 @@ const fetchProducts = async (
 
     const rest = await Promise.all(
       Array.from({ length: pagination.last_page - 1 }, (_, i) =>
-        fetchProductsPage(lang, i + 2, pagination.per_page)
-      )
+        fetchProductsPage(lang, i + 2, pagination.per_page),
+      ),
     );
 
     const allProducts = [

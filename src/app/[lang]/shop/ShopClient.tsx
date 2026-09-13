@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProducts } from '@/hooks/useProducts';
-import { IProduct } from '@/interfaces/productType';
+import { IProduct, ProductsResponse } from '@/interfaces/productType';
 import ProductsList from '@/components/website/Products/ProductsList';
 import PageBreadCrumb from '@/components/website/PageBreadCrumb';
 import { Input } from '@/components/ui/input';
@@ -26,14 +26,17 @@ import {
   getDistinctProductColorLabels,
   productMatchesColorFilter,
 } from '@/lib/productVariantColors';
+import { PRODUCTS_REVALIDATE_SECONDS } from '@/lib/revalidate';
 
 const ITEMS_PER_PAGE = 8;
 
 type ShopClientProps = {
   lang: 'en' | 'ar';
+  /** Server-prefetched catalog (ISR). */
+  initialProducts?: ProductsResponse;
 };
 
-export default function ShopClient({ lang }: ShopClientProps) {
+export default function ShopClient({ lang, initialProducts }: ShopClientProps) {
   const t = useTranslations();
   const tValue = useLocalizedValue();
   const isRTL = lang === 'ar';
@@ -42,7 +45,12 @@ export default function ShopClient({ lang }: ShopClientProps) {
   const [selectedColors, setSelectedColors] = useState('');
   const [requestedPage, setRequestedPage] = useState(1);
 
-  const { data, isLoading, error } = useProducts({ locale: lang, fetchAll: true });
+  const { data, isLoading, error } = useProducts({
+    locale: lang,
+    fetchAll: true,
+    initialData: initialProducts,
+    staleTime: PRODUCTS_REVALIDATE_SECONDS * 1000,
+  });
   const { data: categoriesData } = useCategories();
 
   const applyPriceRange = (next: [number, number]) => {
