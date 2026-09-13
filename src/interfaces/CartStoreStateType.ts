@@ -18,7 +18,11 @@ export interface ICartItem {
     product_variant_id?: string
   };
   image: string,
-  product_variant_id?: string
+  product_variant_id?: string,
+  cart_item_id?: string,
+  is_available?: boolean,
+  availability_message?: string | null,
+  available_qty?: number | null
 
 }
     
@@ -26,6 +30,10 @@ export interface ICartItem {
 export interface ICartStoreState {
     cart: ICartItem[];
     cartId: number | null;
+    subtotal: number;
+    tax: number;
+    discount: number;
+    total: number;
     hasHydrated: boolean;
 }
 
@@ -43,9 +51,9 @@ export interface ICartStoreActions {
 
   clearCart: () => Promise<void>
 
-  incrementQuantity: (productId: string) => Promise<void>
+  incrementQuantity: (productId: string, selection?: object) => Promise<void>
 
-  decrementQuantity: (productId: string) => Promise<void>
+  decrementQuantity: (productId: string, selection?: object) => Promise<void>
 
   fetchCart: () => Promise<void>   
 }

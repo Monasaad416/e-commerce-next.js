@@ -1,8 +1,10 @@
-// In QtyBtns.tsx
-import { ICartItem } from '@/interfaces/CartStoreStateType';
-import { IProduct } from '@/interfaces/productType';
-import { useCartStore } from '@/stores/cartStore';
-import { useState, useEffect } from 'react';
+import { Minus, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { ICartItem } from "@/interfaces/CartStoreStateType";
+import { IProduct } from "@/interfaces/productType";
+import { useCartStore } from "@/stores/cartStore";
+import { cn } from "@/lib/utils";
 
 interface QtyBtnsProps {
     item: ICartItem | IProduct;
@@ -14,31 +16,20 @@ const QtyBtns = ({ item, selection = {}, onQuantityChange }: QtyBtnsProps) => {
     const [quantity, setQuantity] = useState(1);
     const { incrementQuantity, decrementQuantity } = useCartStore();
 
-    // Update local quantity when item changes
     useEffect(() => {
-        if ('quantity' in item) {
+        if ("qty" in item) {
             setQuantity(item.qty);
         }
     }, [item]);
 
-    // const handleIncrement = () => {
-    //     const newQuantity = quantity + 1;
-    //     setQuantity(newQuantity);
-    //     if (onQuantityChange) {
-    //         onQuantityChange(newQuantity);
-    //     } else if ('id' in item) {
-    //         incrementQuantity(String(item.id), selection, newQuantity);
-    //     }
-    // };
-
     const handleIncrement = () => {
         const newQuantity = quantity + 1;
         setQuantity(newQuantity);
-        
+
         if (onQuantityChange) {
             onQuantityChange(newQuantity);
-        } else if ('id' in item) {
-            incrementQuantity(String(item.id), selection); 
+        } else if ("id" in item) {
+            incrementQuantity(String(item.id), selection);
         }
     };
 
@@ -48,35 +39,40 @@ const QtyBtns = ({ item, selection = {}, onQuantityChange }: QtyBtnsProps) => {
             setQuantity(newQuantity);
             if (onQuantityChange) {
                 onQuantityChange(newQuantity);
-            } else if ('id' in item) {
+            } else if ("id" in item) {
                 decrementQuantity(String(item.id), selection);
             }
         }
     };
 
+    const btnCls =
+        "flex h-9 w-9 items-center justify-center text-shop_light_gray transition-colors hover:bg-shop_secondary hover:text-shop_dark_primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-shop_light_gray/60";
+
     return (
-        <div className="flex items-center border w-28 bg-white shadow-sm overflow-hidden">
+        <div className="inline-flex items-center overflow-hidden rounded-xl border border-shop_light_gray/20 bg-shop_dark_primary/60">
             <button
-                className="w-10 h-10 flex items-center justify-center bg-shop_dark_primary hover:bg-shop_white hover:text-shop_dark_primary text-white font-bold active:bg-gray-300 transition-colors"
+                type="button"
+                className={cn(btnCls, "border-e border-shop_light_gray/15")}
                 onClick={handleDecrement}
                 disabled={quantity === 1}
+                aria-label="Decrease quantity"
             >
-                -
+                <Minus className="h-3.5 w-3.5" />
             </button>
 
-            <span className="flex-1 text-center font-medium text-shop_black">
+            <span className="flex h-9 min-w-[2.5rem] items-center justify-center text-sm font-semibold text-shop_white">
                 {quantity}
             </span>
 
             <button
-                className="w-10 h-10 flex items-center justify-center bg-shop_dark_primary hover:bg-shop_white hover:text-shop_dark_primary text-white font-bold active:bg-gray-300 transition-colors"                
+                type="button"
+                className={cn(btnCls, "border-s border-shop_light_gray/15")}
                 onClick={handleIncrement}
+                aria-label="Increase quantity"
             >
-                +
+                <Plus className="h-3.5 w-3.5" />
             </button>
         </div>
-
-
     );
 };
 

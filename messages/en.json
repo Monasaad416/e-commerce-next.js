@@ -67,7 +67,15 @@
     "AddToWishlist": "Add to Wishlist",
     "Back": "Back",
     "Continue": "Continue",
-    "PlaceOrder": "Place Order"
+    "PlaceOrder": "Place Order",
+    "PlacingOrder": "Placing order...",
+    "EmptyCart": "Your cart is empty.",
+    "SignInToCheckout": "Please sign in to checkout.",
+    "ProductsUnavailable": "Cart products are no longer available. Clear the cart and add items again.",
+    "CheckoutSessionFailed": "Failed to create checkout session.",
+    "SessionOutdated": "Your session is outdated. Sign out, sign in again, then retry checkout.",
+    "ProductNoLongerExists": "A product in your cart no longer exists. Clear the cart and add items again.",
+    "CreateOrderFailed": "Failed to create order. Please try again."
   },
   "Account": {
     "MyAccount": "My Account",
@@ -96,7 +104,15 @@
     "Total": "Total",
     "Product": "Product",
     "InStock": "In Stock",
-    "OutStock": "Out Stock"
+    "OutStock": "Out of stock",
+    "Description": "Description",
+    "SelectAllOptions": "Select all options above to add this item to your cart.",
+    "SelectOptions": "Select options",
+    "AvailableColors": "Available colors",
+    "TrustFreeDelivery": "Free delivery on qualifying orders",
+    "TrustEasyReturns": "Easy returns within 30 days",
+    "TrustSecurePayment": "Secure checkout",
+    "TrustTopRated": "Handcrafted quality"
   },
   "Pagination":{
     "Previous": "Previous",
@@ -105,12 +121,17 @@
   "Payment":{
     "Cash_On_Delivery":"Cash On Delivery",
     "Order_Review":"Order Review",
+    "Payment_Successful":"Payment successful",
+    "Order_Reference":"Order reference",
     "Thank_you_for_your_order!":"Thank you for your order!",
     "Your_order_has_been_placed_successfully":"Your order has been placed successfully.",
     "You_will_receive_a_confirmation_email_with_your_order_details":"You will receive a confirmation email with your order details.",
     "You_can_track_your_order_in_your_account":"You can track your order in your account",
     "Go_to_My_Orders":"Go to My Orders",
-    "Continue_Shopping":"Continue Shopping"
+    "Continue_Shopping":"Continue Shopping",
+    "Payment_Cancelled":"Payment cancelled",
+    "Payment_Cancelled_Message":"Your payment was cancelled. Your cart is still saved — you can try again anytime.",
+    "Back_to_Cart":"Back to cart"
   },
     "Auth": {
     "invalid_credentials": "Invalid credentials",

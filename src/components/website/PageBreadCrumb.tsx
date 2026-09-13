@@ -18,7 +18,7 @@ const PageBreadCrumb = ({page}: {page:string}) => {
             <Breadcrumb>
                 <BreadcrumbList>
                     <BreadcrumbItem>
-                        <BreadcrumbLink className="text-xl" href="/">{t('Home.title')}</BreadcrumbLink>
+                        <BreadcrumbLink className="text-xl" href={`/${locale}`}>{t('Home.title')}</BreadcrumbLink>
                     </BreadcrumbItem>
 
            <BreadcrumbSeparator

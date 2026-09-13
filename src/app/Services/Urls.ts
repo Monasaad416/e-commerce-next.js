@@ -1,6 +1,18 @@
+const LARAVEL_API_ORIGIN =
+  process.env.LARAVEL_API_ORIGIN ?? "http://laravel-next-ecomm.test";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://laravel-next-ecomm.test/api/v1';
-const STORAGE_BASE_URL = process.env.NEXT_PUBLIC_STORAGE_BASE_URL || 'http://laravel-next-ecomm.test/storage';
+const configuredApiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+// Browser uses same-origin absolute URLs so `new URL(...)` and fetch both work;
+// Next.js rewrites /api/v1/* to Laravel (avoids CORS).
+const API_BASE_URL =
+  typeof window !== "undefined"
+    ? `${window.location.origin}/api/v1`
+    : (configuredApiBase ?? `${LARAVEL_API_ORIGIN}/api/v1`);
+
+const STORAGE_BASE_URL =
+  process.env.NEXT_PUBLIC_STORAGE_BASE_URL ??
+  `${LARAVEL_API_ORIGIN}/storage`;
 
 export const API_URLS = {
     AUTHENTECATEION: {
@@ -22,12 +34,23 @@ export const API_URLS = {
         GET_CART: (lang: string = 'en') => `${API_BASE_URL}/${lang}/cart`,
         ADD_TO_CART: (lang: string = 'en') => `${API_BASE_URL}/${lang}/cart/add`,
         REMOVE_FROM_CART: (lang: string = 'en', cartItemId: string) => `${API_BASE_URL}/${lang}/cart/remove-item/${cartItemId}`,
-        UPDATE_CART: (lang: string = 'en') => `${API_BASE_URL}/${lang}/cart/update`,
+        UPDATE_CART: (lang: string = 'en', cartId: string | number) => `${API_BASE_URL}/${lang}/cart/update/${cartId}`,
         CLEAR_CART: (lang: string = 'en') => `${API_BASE_URL}/${lang}/cart/delete`,
+    },
+    WISHLIST: {
+        GET_WISHLIST: (lang: string = 'en') => `${API_BASE_URL}/${lang}/wishlist`,
+        ADD_TO_WISHLIST: (lang: string = 'en') => `${API_BASE_URL}/${lang}/wishlist/add`,
+        REMOVE_FROM_WISHLIST: (lang: string = 'en', wishlistItemId: string) => `${API_BASE_URL}/${lang}/wishlist/remove-item/${wishlistItemId}`,
+        UPDATE_WISHLIST: (lang: string = 'en', wishlistId: string | number) => `${API_BASE_URL}/${lang}/wishlist/update/${wishlistId}`,
+        CLEAR_WISHLIST: (lang: string = 'en') => `${API_BASE_URL}/${lang}/wishlist/delete`,
     },
     ORDER:{
         GET_ALL_ORDERS : (lang: string = 'en') => `${API_BASE_URL}/${lang}/orders`,
         CREATE_ORDER : (lang: string = 'en') => `${API_BASE_URL}/${lang}/create-order`,
+        CHECKOUT : (lang: string = 'en', orderId: string | number) =>
+            `${API_BASE_URL}/${lang}/orders/${orderId}/checkout`,
+        UPDATE_ORDER : (lang: string = 'en', orderId: string) => `${API_BASE_URL}/${lang}/orders/${orderId}`,
+        UPDATE_PAYMENT_STATUS : (lang: string = 'en', orderId: string) => `${API_BASE_URL}/${lang}/orders/${orderId}/update-payment-status`,
     },
     BASE_URL: API_BASE_URL,
     STORAGE_BASE_URL: STORAGE_BASE_URL,

@@ -1,12 +1,26 @@
-import { useQuery } from '@tanstack/react-query';
-import { getProduct } from '@/lib/getProduct';
+import { useQuery } from "@tanstack/react-query";
+import {
+  getProduct,
+  PRODUCT_REVALIDATE_SECONDS,
+  type GetProductResult,
+} from "@/lib/getProduct";
 
-export function useProduct(locale: string, slug: string) {
+export type UseProductOptions = {
+  /** From RSC `page.tsx` — avoids an extra client request on first paint. */
+  initialProduct?: GetProductResult | null;
+};
+
+export function useProduct(
+  locale: string,
+  slug: string,
+  options?: UseProductOptions
+) {
+  const initial = options?.initialProduct;
+
   return useQuery({
-    queryKey: ['product', locale, slug],
+    queryKey: ["product", locale, slug] as const,
     queryFn: () => getProduct(locale, slug),
-    // enabled: !!slug && !!locale,
-    // staleTime: 1000 * 60 * 5, // 5 minutes
-    // retry: 1,
+    initialData: initial != null ? initial : undefined,
+    staleTime: PRODUCT_REVALIDATE_SECONDS * 1000,
   });
 }

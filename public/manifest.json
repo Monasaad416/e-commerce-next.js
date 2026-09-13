@@ -1,0 +1,17 @@
+{
+  "name": "ORCHID",
+  "short_name": "ORCHID",
+  "description": "HandMade Products Made With Love",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a120e",
+  "theme_color": "#1a120e",
+  "icons": [
+    {
+      "src": "/favicon.jpeg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

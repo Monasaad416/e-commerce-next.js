@@ -39,7 +39,12 @@ export interface ProductsResponse {
     };
 }
 
-
+export type FetchProductsOptions = {
+    page?: number;
+    perPage?: number;
+    /** Fetch all API pages and merge products (shop catalog). */
+    fetchAll?: boolean;
+};
 
 export interface ProductResponse {
     success: boolean;

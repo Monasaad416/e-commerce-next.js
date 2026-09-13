@@ -1,9 +1,20 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { PiCheckCircle, PiFeatherFill, PiNeedle } from "react-icons/pi";
+import type { LucideIcon } from "lucide-react";
+import { CircleCheck, Feather, Pin } from "lucide-react";
 
-const steps = {
+type CraftStepContent = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  items: Array<{ title: string; text: string; icon: LucideIcon }>;
+};
+
+const steps: {
+  en: CraftStepContent;
+  ar: CraftStepContent;
+} = {
   en: {
     eyebrow: "Handcrafted Standard",
     title: "From premium leather to a finished piece made to last.",
@@ -13,17 +24,17 @@ const steps = {
       {
         title: "Select Leather",
         text: "We choose rich, durable leather with character, texture, and long-term wear in mind.",
-        icon: PiFeatherFill,
+        icon: Feather,
       },
       {
         title: "Hand Stitching",
         text: "Edges, seams, and details are refined by hand for a cleaner and more premium finish.",
-        icon: PiNeedle,
+        icon: Pin,
       },
       {
         title: "Final Inspection",
         text: "Each piece is reviewed for balance, durability, and presentation before shipping.",
-        icon: PiCheckCircle,
+        icon: CircleCheck,
       },
     ],
   },
@@ -36,17 +47,17 @@ const steps = {
       {
         title: "اختيار الجلد",
         text: "نختار الجلود الغنية بالملمس والطابع مع التركيز على الجودة والتحمل على المدى الطويل.",
-        icon: PiFeatherFill,
+        icon: Feather,
       },
       {
         title: "الخياطة اليدوية",
         text: "يتم تشطيب الحواف والتفاصيل يدويًا للحصول على مظهر أنيق وإحساس أكثر فخامة.",
-        icon: PiNeedle,
+        icon: Pin,
       },
       {
         title: "الفحص النهائي",
         text: "نراجع كل قطعة من حيث التوازن والمتانة وطريقة العرض قبل الشحن.",
-        icon: PiCheckCircle,
+        icon: CircleCheck,
       },
     ],
   },

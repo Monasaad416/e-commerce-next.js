@@ -1,8 +1,9 @@
 // src/hooks/useProductAttributes.tsx
 
 import { useMemo, useState, useEffect } from "react";
-import { IProduct, AttributeValue } from "@/interfaces/productType";
+import { IProduct } from "@/interfaces/productType";
 import { GroupedAttributes } from "@/interfaces/GroupedAttributesType";
+import { stableAttributeValueKey } from "@/lib/attributeValueKey";
 
 export const useProductAttributes = (product?: IProduct) => {
   /**
@@ -14,13 +15,7 @@ export const useProductAttributes = (product?: IProduct) => {
 
   const variants = product?.variants ?? [];
 
-  const stableValueKey = (value: AttributeValue["value"]) => {
-    if (!value || typeof value !== "object") return String(value ?? "");
-    const entries = Object.entries(value).sort(([a], [b]) => a.localeCompare(b));
-    return entries.map(([k, v]) => `${k}:${String(v)}`).join("|");
-  };
-
-  const isColorName = (attrName: any) => {
+  const isColorName = (attrName: unknown) => {
     const nameString =
       attrName === null || typeof attrName !== "object"
         ? ""
@@ -36,7 +31,7 @@ export const useProductAttributes = (product?: IProduct) => {
       .flatMap((variant) => variant.attribute_values)
       .reduce((acc, attr) => {
         const attributeId = attr.attribute_id;
-        const key = stableValueKey(attr.value);
+        const key = stableAttributeValueKey(attr.value);
 
         if (!acc[attributeId]) {
           acc[attributeId] = {
@@ -91,7 +86,7 @@ export const useProductAttributes = (product?: IProduct) => {
         return variants.some(variant =>
           variant.attribute_values.some(a =>
             a.attribute_id === attrIdNum &&
-            stableValueKey(a.value) === v.key
+            stableAttributeValueKey(a.value) === v.key
           )
         );
       });
@@ -104,7 +99,7 @@ export const useProductAttributes = (product?: IProduct) => {
     // If still empty (no grouped attrs), fallback to first variant's values
     if (!Object.keys(initial).length && variants[0]) {
       variants[0].attribute_values.forEach((attr) => {
-        initial[attr.attribute_id] = stableValueKey(attr.value);
+        initial[attr.attribute_id] = stableAttributeValueKey(attr.value);
       });
     }
 
@@ -132,7 +127,7 @@ export const useProductAttributes = (product?: IProduct) => {
       // Check if variant has the value we're checking
       const hasValue = variant.attribute_values.some(
         a => a.attribute_id === attributeId &&
-          stableValueKey(a.value) === valueKey
+          stableAttributeValueKey(a.value) === valueKey
       );
       if (!hasValue) return false;
 
@@ -143,7 +138,7 @@ export const useProductAttributes = (product?: IProduct) => {
 
         return variant.attribute_values.some(
           a => a.attribute_id === attrIdNum &&
-            stableValueKey(a.value) === selectedKey
+            stableAttributeValueKey(a.value) === selectedKey
         );
       });
     });
@@ -169,13 +164,13 @@ export const useProductAttributes = (product?: IProduct) => {
           ? variants.some((variant) =>
             variant.attribute_values.some((a) =>
               a.attribute_id === attrId &&
-              stableValueKey(a.value) === currentKey &&
+              stableAttributeValueKey(a.value) === currentKey &&
               // Ensure this variant also has all other selected attributes
               Object.entries(newSelected).every(([selId, selKey]) => {
                 if (Number(selId) === attrId) return true;
                 return variant.attribute_values.some((a) =>
                   a.attribute_id === Number(selId) &&
-                  stableValueKey(a.value) === selKey
+                  stableAttributeValueKey(a.value) === selKey
                 );
               })
             )
@@ -188,13 +183,13 @@ export const useProductAttributes = (product?: IProduct) => {
             variants.some((variant) =>
               variant.attribute_values.some((a) =>
                 a.attribute_id === attrId &&
-                stableValueKey(a.value) === v.key &&
+                stableAttributeValueKey(a.value) === v.key &&
                 // Ensure this variant also has all other selected attributes
                 Object.entries(newSelected).every(([selId, selKey]) => {
                   if (Number(selId) === attrId) return true;
                   return variant.attribute_values.some((a) =>
                     a.attribute_id === Number(selId) &&
-                    stableValueKey(a.value) === selKey
+                    stableAttributeValueKey(a.value) === selKey
                   );
                 })
               )

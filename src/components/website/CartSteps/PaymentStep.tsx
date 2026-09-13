@@ -1,80 +1,59 @@
-import { forwardRef, useEffect, useImperativeHandle } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { IPayment, PaymentType } from "@/interfaces/OrderType";
+"use client";
 
-export interface PaymentStepRef {
-    validate: () => Promise<{ valid: boolean; data: PaymentType | null }>;
-}
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { createOrder } from "@/lib/orders";
 
-interface PaymentStepProps {
-  currentStep: number;
-  onNext: (data: PaymentType) => void;
-  formData?: Partial<PaymentType> | null;
-}
+const PaymentStep = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-const PaymentStep = forwardRef<PaymentStepRef, PaymentStepProps>(({ onNext, formData = null }, ref) => {
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-        trigger,
-        reset
-    } = useForm<PaymentType>({
-        mode: "onChange",
-        resolver: zodResolver(IPayment),
-        defaultValues: formData || {}
-    });
+  async function handleCheckout(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-    // Reset form when formData changes
-    useEffect(() => {
-        if (formData) {
-            reset(formData);
-        }
-    }, [formData, reset]);
+    try {
+    //   const result = await createOrder();
 
-useImperativeHandle(ref, () => ({
-    async validate() {
-        const isValid = await trigger();
-        if (!isValid) {
-            return { valid: false, data: null };
-        }
+    //   if (result.error) {
+    //     setError(result.error);
+    //     setIsLoading(false);
+    //     return;
+    //   }
 
-        // Get form values directly from the form
-        const form = document.getElementById('Payment-form') as HTMLFormElement;
-        if (!form) {
-            return { valid: false, data: null };
-        }
+    //   if (!result.sessionUrl) {
+    //     setError("Failed to start checkout.");
+    //     setIsLoading(false);
+    //     return;
+    //   }
 
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries()) as unknown as PaymentType;
-        
-        return { 
-            valid: true, 
-            data 
-        };
+    //   window.location.href = result.sessionUrl;
+    } catch (err) {
+      console.error("Checkout failed:", err);
+      setError("Checkout failed. Please try again.");
+      setIsLoading(false);
     }
-}), [trigger]);
+  }
 
-    const onSubmit = (data: PaymentType) => {
-        onNext(data);
-    };
-
-
-
-
-    // Helper function to get input classes
-    const getInputClasses = (fieldName: keyof typeof errors) => 
-        `w-full px-4 py-2 border ${
-            errors[fieldName] ? 'border-red-500' : 'border-gray-300'
-        } rounded-md focus:ring-2 focus:ring-shop_light focus:border-shop_light transition-all`;
-
-
-    return (
-        <form id="Payment-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6"></form>
-    );
-});
-
-PaymentStep.displayName = "PaymentStep";
+  return (
+    <form onSubmit={handleCheckout} className="w-full space-y-3">
+      {error ? (
+        <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {error}{" "}
+          {error.toLowerCase().includes("sign") ? (
+            <Link href="/auth" className="font-semibold underline">
+              Go to sign in
+            </Link>
+          ) : null}
+        </p>
+      ) : null}
+      <Button className="w-full" type="submit" disabled={isLoading}>
+        {isLoading ? "Redirecting..." : "Checkout"}
+      </Button>
+    </form>
+  );
+};
 
 export default PaymentStep;

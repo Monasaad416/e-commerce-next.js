@@ -1,34 +1,46 @@
-
-import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import ProductClient from './ProductClient';
-import { getProduct } from '@/lib/getProduct';
+import { Metadata } from "next";
+import ProductClient from "./ProductClient";
+import { getProduct } from "@/lib/getProduct";
+import { getLocalizedValue } from "@/lib/i18n/getLocalizedValue";
+import { getProductFromApiResponse } from "@/lib/productVariantMatch";
 
 interface ProductPageProps {
-  params: { 
-    lang: string; 
-    slug: string 
-  };
+  params: Promise<{ lang: string; slug: string }>;
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const resolvedParams = await Promise.resolve(params);
-  const product = await getProduct(resolvedParams.lang, resolvedParams.slug);
+  const { lang, slug } = await params;
+  const langNorm = lang === "ar" ? "ar" : "en";
+  const json = await getProduct(langNorm, slug);
+  const product = getProductFromApiResponse(json);
 
   if (!product) {
     return {
-      title: 'Product Not Found',
+      title: "Product Not Found",
     };
   }
 
-  return {
-    title: product.name,
-    description: product.description,
+  const title = getLocalizedValue(product.name as Parameters<typeof getLocalizedValue>[0], lang);
+  const description = getLocalizedValue(
+    product.description as Parameters<typeof getLocalizedValue>[0],
+    lang
+  );
 
+  return {
+    title: title || "Product",
+    description: description ? description.slice(0, 160) : undefined,
   };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const resolvedParams = await Promise.resolve(params);
-  return <ProductClient productSlug={resolvedParams.slug} />;
+  const { slug, lang } = await params;
+  const langNorm = lang === "ar" ? "ar" : "en";
+  // Same `fetch` options as `generateMetadata` → deduped in one request; feeds React Query initial data.
+  const initialProduct = await getProduct(langNorm, slug);
+
+  return (
+    <div className="min-h-[60vh]">
+      <ProductClient productSlug={slug} initialProduct={initialProduct} />
+    </div>
+  );
 }

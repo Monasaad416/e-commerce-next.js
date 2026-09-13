@@ -67,7 +67,15 @@
     "AddToWishlist": "أضف إلى المفضلة",
     "Back": "رجوع",
     "Continue": "متابعة",
-    "PlaceOrder": "إتمام الطلب"
+    "PlaceOrder": "إتمام الطلب",
+    "PlacingOrder": "جارٍ إرسال الطلب...",
+    "EmptyCart": "سلتك فارغة.",
+    "SignInToCheckout": "يرجى تسجيل الدخول لإتمام الدفع.",
+    "ProductsUnavailable": "المنتجات في السلة لم تعد متاحة. افرغ السلة وأضف المنتجات مرة أخرى.",
+    "CheckoutSessionFailed": "فشل إنشاء جلسة الدفع.",
+    "SessionOutdated": "جلستك منتهية. سجّل الخروج ثم الدخول مرة أخرى وحاول الدفع من جديد.",
+    "ProductNoLongerExists": "أحد المنتجات في سلتك لم يعد موجودًا. افرغ السلة وأضف المنتجات مرة أخرى.",
+    "CreateOrderFailed": "فشل إنشاء الطلب. يرجى المحاولة مرة أخرى."
   },
   "Account": {
     "MyAccount": "حسابي",
@@ -96,8 +104,15 @@
     "Total": "الإجمالي",
     "Product": "المنتج",
     "InStock": "متوفر",
-    "OutStock": "غير متوفر"
-
+    "OutStock": "غير متوفر",
+    "Description": "الوصف",
+    "SelectAllOptions": "اختر كل الخيارات أعلاه لإضافة المنتج إلى السلة.",
+    "SelectOptions": "اختر الخيارات",
+    "AvailableColors": "الألوان المتوفرة",
+    "TrustFreeDelivery": "توصيل مجاني للطلبات المؤهلة",
+    "TrustEasyReturns": "إرجاع سهل خلال 30 يومًا",
+    "TrustSecurePayment": "دفع آمن",
+    "TrustTopRated": "جودة صنع يدوي"
   },
   "Pagination":{
     "Previous": "السابق",
@@ -106,12 +121,17 @@
   "Payment":{
     "Cash_On_Delivery":"الدفع عندالإستلام",
     "Order_Review":"مراجعة الطلب",
+    "Payment_Successful":"تم الدفع بنجاح",
+    "Order_Reference":"رقم الطلب",
     "Thank_you_for_your_order!":"شكراً لك على طلبك!",
     "Your_order_has_been_placed_successfully":"تم تسجيل طلبك بنجاح.",
     "You_will_receive_a_confirmation_email_with_your_order_details":"سوف تتلقي بريد إلكتروني لتأكيد طلبك",
     "You_can_track_your_order_in_your_account":"يمكنك تتبع طلبك في حسابك",
-    "Go_to_My_Orders":"ไป إلى طلباتي",
-    "Continue_Shopping":"مواصلة التسوق"
+    "Go_to_My_Orders":"الذهاب إلى طلباتي",
+    "Continue_Shopping":"مواصلة التسوق",
+    "Payment_Cancelled":"تم إلغاء الدفع",
+    "Payment_Cancelled_Message":"تم إلغاء الدفع. سلتك ما زالت محفوظة — يمكنك المحاولة مرة أخرى في أي وقت.",
+    "Back_to_Cart":"العودة إلى السلة"
   },
   "Auth": {
     "invalid_credentials": "بيانات اعتماد غير صالحة",

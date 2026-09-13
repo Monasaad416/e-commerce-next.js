@@ -1,271 +1,370 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { IShipping, ShippingType } from "@/interfaces/ShippingType";
 import { useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { CountrySelect, StateSelect, CitySelect } from "react-country-state-city";
 import "react-country-state-city/dist/react-country-state-city.css";
-import 'react-phone-number-input/style.css';
-import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
+import "react-phone-number-input/style.css";
+import PhoneInput, {
+    getCountryCallingCode,
+    type Country,
+    type Value as PhoneValue,
+} from "react-phone-number-input";
+
+import { IShipping, ShippingType } from "@/interfaces/ShippingType";
+import { cn } from "@/lib/utils";
+
+/* Country object shape returned by react-country-state-city's CountrySelect onChange */
+interface CscCountry {
+    id: number | string;
+    name: string;
+    iso2?: string;
+    phone_code?: string | number;
+}
+
+interface CscState {
+    id: number | string;
+    name: string;
+}
+
+interface CscCity {
+    id: number | string;
+    name: string;
+}
 
 export interface ShippingStepRef {
     validate: () => Promise<{ valid: boolean; data: ShippingType | null }>;
-    data?: ShippingType | null; // Add this property
+    data?: ShippingType | null;
 }
 
 interface ShippingStepProps {
-  currentStep: number;
-  onNext: (data: ShippingType) => void;
-  formData?: Partial<ShippingType> | null;
+    currentStep: number;
+    onNext: (data: ShippingType) => void;
+    formData?: Partial<ShippingType> | null;
 }
 
-const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(({ onNext, formData = null }, ref) => {
-    const {
-        register,
-        handleSubmit,
-        getValues,
-        formState: { errors },
-        trigger,
-        reset
-    } = useForm<ShippingType>({
-        mode: "onChange",
-        resolver: zodResolver(IShipping),
-        defaultValues: formData || {}
-    });
+const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(
+    ({ onNext, formData = null }, ref) => {
+        const {
+            register,
+            handleSubmit,
+            getValues,
+            setValue,
+            control,
+            formState: { errors },
+            trigger,
+            reset,
+        } = useForm<ShippingType>({
+            mode: "onChange",
+            resolver: zodResolver(IShipping),
+            defaultValues: formData || {},
+        });
 
-    const t = useTranslations('Shipping');
+        const t = useTranslations("Shipping");
 
-    const [countryId, setCountryId] = useState<string>('');
-    const [stateId, setStateId] = useState<string>('');
-    // inside your component
-const [phone, setPhone] = useState<string | undefined>(undefined);
-const [countryCode, setCountryCode] = useState<string>(''); 
+        const [countryId, setCountryId] = useState<string>("");
+        const [stateId, setStateId] = useState<string>("");
+        const [phoneCountry, setPhoneCountry] = useState<Country | undefined>(
+            undefined,
+        );
+        const phoneValue = useWatch({ control, name: "phone" });
+        const phone = (phoneValue || undefined) as PhoneValue | undefined;
 
+        // Register phone manually (controlled by PhoneInput); include validation
+        useEffect(() => {
+            register("phone");
+            register("country");
+            register("city");
+        }, [register]);
 
-    // Reset form when formData changes
-    useEffect(() => {
-        if (formData) {
-            reset(formData);
-        }
-    }, [formData, reset]);
-
-    useImperativeHandle(ref, () => ({
-    async validate() {
-        try {
-            // First trigger validation
-            const isValid = await trigger();
-            
-            if (!isValid) {
-                return { valid: false, data: null };
+        useEffect(() => {
+            if (formData) {
+                reset(formData);
             }
+        }, [formData, reset]);
 
-            // Get values directly from react-hook-form
-            const values = getValues();
-            
-            // Ensure all required fields have values
-            const shippingData: ShippingType = {
-                firstName: values.firstName || '',
-                lastName: values.lastName || '',
-                address: values.address || '',
-                city: values.city || '',
-                zipCode: values.zipCode || '',
-                country: values.country || '',
-                phone: values.phone || '',
-                apartment: values.apartment || undefined,
-            };
-            
+        useImperativeHandle(
+            ref,
+            () => ({
+                async validate() {
+                    try {
+                        const isValid = await trigger();
+                        if (!isValid) return { valid: false, data: null };
 
-            
-            return { 
-                valid: true, 
-                data: shippingData
-            };
-        } catch (error) {
-            console.error('Validation error:', error);
-            return { valid: false, data: null };
-        }
-    },
-}), [trigger, getValues, errors]);
-    const onSubmit = (data: ShippingType) => {
-        onNext(data);
-    };
+                        const values = getValues();
+                        const shippingData: ShippingType = {
+                            firstName: values.firstName || "",
+                            lastName: values.lastName || "",
+                            address: values.address || "",
+                            city: values.city || "",
+                            zipCode: values.zipCode || "",
+                            country: values.country || "",
+                            phone: values.phone || "",
+                            apartment: values.apartment || undefined,
+                        };
+                        return { valid: true, data: shippingData };
+                    } catch (error) {
+                        console.error("Validation error:", error);
+                        return { valid: false, data: null };
+                    }
+                },
+            }),
+            [trigger, getValues],
+        );
 
+        const onSubmit = (data: ShippingType) => {
+            onNext(data);
+        };
 
+        /* ── Country picker → sync phone widget + prefill dialing code ── */
+        const handleCountryChange = (country: unknown) => {
+            if (!country || typeof country !== "object" || !("id" in country)) {
+                return;
+            }
+            const c = country as CscCountry;
 
+            setCountryId(String(c.id));
+            setValue("country", c.name, { shouldValidate: true });
 
-    // Helper function to get input classes
-const getInputClasses = (fieldName: keyof typeof errors) =>
-  `w-full px-4 py-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-shop_light transition-all ${
-    errors[fieldName] ? 'ring-2 ring-red-500' : ''
-  }`;
+            if (c.iso2) {
+                const iso2 = c.iso2.toUpperCase() as Country;
+                setPhoneCountry(iso2);
 
-    return (
-        <form id="shipping-form" onSubmit={handleSubmit(onSubmit)} className="py-4">
-            <div className="py-4">
-                <h2 className="text-2xl font-bold mb-6 text-shop_dark">Shipping Information</h2>
-                <div className="max-w-2xl space-y-5">
+                // Prefill phone with the country's calling code ("+20", "+1", ...)
+                // Prefer phone_code from the dataset; fall back to library lookup.
+                let dialCode: string | undefined;
+                if (c.phone_code) {
+                    dialCode = String(c.phone_code).replace(/^\+/, "");
+                } else {
+                    try {
+                        dialCode = getCountryCallingCode(iso2);
+                    } catch {
+                        dialCode = undefined;
+                    }
+                }
+                if (dialCode) {
+                    const next = `+${dialCode}` as PhoneValue;
+                    setValue("phone", next, { shouldValidate: false });
+                }
+            }
+        };
+
+        const handleStateChange = (state: unknown) => {
+            if (state && typeof state === "object" && "id" in state) {
+                setStateId(String((state as CscState).id));
+            }
+        };
+
+        const handleCityChange = (city: unknown) => {
+            if (city && typeof city === "object" && "name" in city) {
+                setValue("city", (city as CscCity).name, { shouldValidate: true });
+            }
+        };
+
+        // Input base styles mapped to the shop theme
+        const inputBase =
+            "w-full rounded-xl border border-shop_light_gray/20 bg-shop_dark_primary/60 px-4 py-2.5 text-sm text-shop_white placeholder:text-shop_light_gray/40 transition-colors focus:border-shop_secondary/60 focus:outline-none focus:ring-2 focus:ring-shop_secondary/40";
+
+        const getInputClasses = (fieldName: keyof typeof errors) =>
+            cn(inputBase, errors[fieldName] && "border-red-500/50 focus:ring-red-500/30");
+
+        const labelCls =
+            "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-shop_light_gray/80";
+        const errorCls = "mt-1.5 text-xs text-red-300";
+
+        return (
+            <form id="shipping-form" onSubmit={handleSubmit(onSubmit)} className="py-2">
+                <div className="mb-6 flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-shop_white sm:text-2xl">
+                        Shipping Information
+                    </h2>
+                </div>
+
+                <div className="space-y-6">
                     {/* Name Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {t('FirstName')}
+                            <label className={labelCls}>
+                                {t("FirstName")}
                                 {errors.firstName && (
-                                    <span className="text-red-500 text-xs ml-1">*</span>
+                                    <span className="ml-1 text-red-400">*</span>
                                 )}
                             </label>
                             <input
-                                {...register('firstName')}
+                                {...register("firstName")}
                                 type="text"
                                 placeholder="John"
-                                className={getInputClasses('firstName')}
+                                className={getInputClasses("firstName")}
                             />
                             {errors.firstName && (
-                                <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+                                <p className={errorCls}>{errors.firstName.message}</p>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {t('LastName')}
+                            <label className={labelCls}>
+                                {t("LastName")}
                                 {errors.lastName && (
-                                    <span className="text-red-500 text-xs ml-1">*</span>
+                                    <span className="ml-1 text-red-400">*</span>
                                 )}
                             </label>
                             <input
-                                {...register('lastName')}
+                                {...register("lastName")}
                                 type="text"
                                 placeholder="Doe"
-                                className={getInputClasses('lastName')}
+                                className={getInputClasses("lastName")}
                             />
                             {errors.lastName && (
-                                <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+                                <p className={errorCls}>{errors.lastName.message}</p>
                             )}
                         </div>
                     </div>
 
                     {/* Address */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {t('Address')}
-                            {errors.address && (
-                                <span className="text-red-500 text-xs ml-1">*</span>
-                            )}
+                        <label className={labelCls}>
+                            {t("Address")}
+                            {errors.address && <span className="ml-1 text-red-400">*</span>}
                         </label>
                         <input
-                            {...register('address')}
+                            {...register("address")}
                             type="text"
                             placeholder="123 Main St"
-                            className={getInputClasses('address')}
+                            className={getInputClasses("address")}
                         />
                         {errors.address && (
-                            <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
+                            <p className={errorCls}>{errors.address.message}</p>
                         )}
                     </div>
 
-                    {/* Apartment/Suite (Optional) */}
-                    {/* Zip Code */}
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Apartment + Zip */}
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {t('ApartmentSuite')}
+                            <label className={labelCls}>
+                                {t("ApartmentSuite")}
                                 {errors.apartment && (
-                                    <span className="text-red-500 text-xs ml-1">*</span>
+                                    <span className="ml-1 text-red-400">*</span>
                                 )}
                             </label>
                             <input
-                                {...register('apartment')}
+                                {...register("apartment")}
                                 type="text"
-                                placeholder="John"
-                                className={getInputClasses('apartment')}
+                                placeholder="Apt 4B"
+                                className={getInputClasses("apartment")}
                             />
                             {errors.apartment && (
-                                <p className="mt-1 text-sm text-red-600">{errors.apartment.message}</p>
+                                <p className={errorCls}>{errors.apartment.message}</p>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {t('ZipCode')}
+                            <label className={labelCls}>
+                                {t("ZipCode")}
                                 {errors.zipCode && (
-                                    <span className="text-red-500 text-xs ml-1">*</span>
+                                    <span className="ml-1 text-red-400">*</span>
                                 )}
                             </label>
                             <input
-                                {...register('zipCode')}
+                                {...register("zipCode")}
                                 type="text"
-                                placeholder="Doe"
-                                className={getInputClasses('zipCode')}
+                                placeholder="10001"
+                                className={getInputClasses("zipCode")}
                             />
                             {errors.zipCode && (
-                                <p className="mt-1 text-sm text-red-600">{errors.zipCode.message}</p>
+                                <p className={errorCls}>{errors.zipCode.message}</p>
                             )}
                         </div>
                     </div>
 
-
-                    {/* City, State, ZIP */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-
-                        <CountrySelect
-                        className="border-0"
-                            onChange={(country) => {
-                                console.log(country);
-                                // Check if it's a country object (not a change event)
-                                if (country && typeof country === 'object' && 'id' in country) {
-                                setCountryId(String(country.id));
-                                console.log('Country ID:', String(country.id));
-                                }
-                            }}
-                            placeHolder="Select Country"
-                        />
-
-                        <StateSelect
-                        countryid={Number(countryId)}
-                        onChange={(state) => {
-                            console.log(state);
-                            // Check if it's a state object (not a change event)
-                            if (state && typeof state === 'object' && 'id' in state) {
-                            setStateId(String(state.id)); // ✅ Convert to string
-                            }
-                        }}
-                        placeHolder="Select State"
-                        />
-
-                        <CitySelect
-                        countryid={Number(countryId)}
-                        stateid={Number(stateId)}
-                        onChange={(city) => console.log(city)}
-                        placeHolder="Select City"
-                        />
-                    </div>
-
-
-
-                    {/* Phone Number */}
+                    {/* Country / State / City */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {t('PhoneNumber')}
-                            {errors.phone && (
-                                <span className="text-red-500 text-xs ml-1">*</span>
+                        <label className={labelCls}>Location</label>
+                        <div
+                            className={cn(
+                                "grid grid-cols-1 gap-3 md:grid-cols-3",
+                                // Style third-party selects from react-country-state-city to match the dark theme
+                                "[&_.stdropdown-container]:!rounded-xl [&_.stdropdown-container]:!border [&_.stdropdown-container]:!border-shop_light_gray/20 [&_.stdropdown-container]:!bg-shop_dark_primary/60",
+                                "[&_.stdropdown-input]:!bg-transparent [&_.stdropdown-input]:!text-shop_white",
+                                "[&_.stdropdown-input_input]:!bg-transparent [&_.stdropdown-input_input]:!text-shop_white [&_.stdropdown-input_input::placeholder]:!text-shop_light_gray/40",
+                                "[&_.stsearch-box_input]:!bg-shop_dark_primary/80 [&_.stsearch-box_input]:!text-shop_white [&_.stsearch-box_input]:!border-shop_light_gray/20",
+                                "[&_.stdropdown-menu]:!rounded-xl [&_.stdropdown-menu]:!border [&_.stdropdown-menu]:!border-shop_light_gray/20 [&_.stdropdown-menu]:!bg-shop_dark_primary [&_.stdropdown-menu]:!text-shop_white",
+                                "[&_.stdropdown-item:hover]:!bg-shop_secondary/20 [&_.stdropdown-item.selected]:!bg-shop_secondary/30",
                             )}
-                        </label>
-                        <PhoneInput
-                        international
-                        value={phone}
-                        onChange={(value) => setPhone(value)}
-                          className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-shop_light"
-                        />
-                        {errors.phone && (
-                            <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+                        >
+                            <CountrySelect
+                                onChange={handleCountryChange}
+                                placeHolder="Select Country"
+                            />
+                            <StateSelect
+                                countryid={Number(countryId)}
+                                onChange={handleStateChange}
+                                placeHolder="Select State"
+                            />
+                            <CitySelect
+                                countryid={Number(countryId)}
+                                stateid={Number(stateId)}
+                                onChange={handleCityChange}
+                                placeHolder="Select City"
+                            />
+                        </div>
+                        {errors.country && (
+                            <p className={errorCls}>{errors.country.message}</p>
                         )}
-                        <p className="mt-1 text-xs text-gray-500">For delivery questions only</p>
+                        {errors.city && <p className={errorCls}>{errors.city.message}</p>}
                     </div>
 
-
+                    {/* Phone */}
+                    <div>
+                        <label className={labelCls}>
+                            {t("PhoneNumber")}
+                            {errors.phone && <span className="ml-1 text-red-400">*</span>}
+                        </label>
+                        <div
+                            className={cn(
+                                // Container: group country picker + input into one pill
+                                "flex items-stretch overflow-hidden rounded-xl border border-shop_light_gray/20 bg-shop_dark_primary/60 transition-colors focus-within:border-shop_secondary/60 focus-within:ring-2 focus-within:ring-shop_secondary/40",
+                                errors.phone && "border-red-500/50 focus-within:ring-red-500/30",
+                                // Normalize react-phone-number-input internals
+                                "[&_.PhoneInput]:flex [&_.PhoneInput]:w-full [&_.PhoneInput]:items-center [&_.PhoneInput]:gap-0",
+                                // Country selector area: flag + arrow, with a subtle divider
+                                "[&_.PhoneInputCountry]:relative [&_.PhoneInputCountry]:flex [&_.PhoneInputCountry]:h-full [&_.PhoneInputCountry]:items-center [&_.PhoneInputCountry]:gap-2 [&_.PhoneInputCountry]:px-4 [&_.PhoneInputCountry]:py-2.5",
+                                "[&_.PhoneInputCountry]:border-e [&_.PhoneInputCountry]:border-shop_light_gray/15 [&_.PhoneInputCountry]:bg-shop_dark_primary/40",
+                                "[&_.PhoneInputCountryIcon]:!overflow-hidden [&_.PhoneInputCountryIcon]:!rounded-sm [&_.PhoneInputCountryIcon]:!shadow-sm",
+                                "[&_.PhoneInputCountryIcon--border]:!shadow-none",
+                                "[&_.PhoneInputCountrySelectArrow]:!opacity-80 [&_.PhoneInputCountrySelectArrow]:!text-shop_light_gray",
+                                // Native country <select> overlay — keep it invisible but clickable
+                                "[&_.PhoneInputCountrySelect]:!absolute [&_.PhoneInputCountrySelect]:!inset-0 [&_.PhoneInputCountrySelect]:!cursor-pointer [&_.PhoneInputCountrySelect]:!opacity-0",
+                                // The number input
+                                "[&_input.PhoneInputInput]:!flex-1 [&_input.PhoneInputInput]:!border-0 [&_input.PhoneInputInput]:!bg-transparent [&_input.PhoneInputInput]:!px-4 [&_input.PhoneInputInput]:!py-2.5 [&_input.PhoneInputInput]:!text-sm [&_input.PhoneInputInput]:!text-shop_white [&_input.PhoneInputInput]:!outline-none",
+                                "[&_input.PhoneInputInput::placeholder]:!text-shop_light_gray/40",
+                            )}
+                        >
+                            <PhoneInput
+                                international
+                                withCountryCallingCode
+                                defaultCountry={phoneCountry ?? "US"}
+                                country={phoneCountry}
+                                value={phone}
+                                onChange={(value) => {
+                                    setValue("phone", value ?? "", {
+                                        shouldValidate: true,
+                                    });
+                                }}
+                                onCountryChange={(c) => {
+                                    if (c) setPhoneCountry(c);
+                                }}
+                                placeholder={t("PhoneNumber")}
+                            />
+                        </div>
+                        {errors.phone && <p className={errorCls}>{errors.phone.message}</p>}
+                        <p className="mt-1.5 text-xs text-shop_light_gray/60">
+                            Country code is set automatically from your selected country. You
+                            can still change it via the flag.
+                        </p>
+                    </div>
                 </div>
-            </div>
-        </form>
-    );
-});
+            </form>
+        );
+    },
+);
 
 ShippingStep.displayName = "ShippingStep";
 

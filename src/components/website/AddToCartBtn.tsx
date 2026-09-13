@@ -4,8 +4,7 @@ import { IProduct } from "@/interfaces/productType";
 import { Button } from "../ui/button";
 import { useCartStore } from "@/stores/cartStore";
 import { toast } from "react-toastify";
-import { BsCartPlus } from "react-icons/bs";
-import { useTranslations } from "next-intl";
+import { ShoppingCart } from "lucide-react";
 import { ICartItem } from "@/interfaces/CartStoreStateType";
 
 interface AddToCartBtnProps {
@@ -27,7 +26,6 @@ const AddToCartBtn = ({
   imageOverride,
 }: AddToCartBtnProps) => {
     const addToCart = useCartStore(state => state.addToCart);
-    const t = useTranslations();
 
     // const type ="";
     let productImage = imageOverride || "";
@@ -50,16 +48,14 @@ const AddToCartBtn = ({
       }
     }
 
-    const handleAddToCart = () => {
-        // Create unique ID from product and selection
-        const selectionKey = Object.entries(selection)
-            .map(([key, value]) => `${key}:${value}`)
-            .join('|');
-        // const uniqueId = `${product?.id}-${selectionKey}`;
-        
+    const handleAddToCart = async () => {
+        const selectionVariantId = (selection as { product_variant_id?: string | number })
+            ?.product_variant_id
+        const variantId = product?.variants?.[0]?.id ?? selectionVariantId
+
         const cartItem = {
             id: String(product?.id),
-            product_variant_id: product?.variants?.[0]?.id ? String(product?.variants?.[0]?.id) : undefined,
+            product_variant_id: variantId != null ? String(variantId) : undefined,
             name: product?.name,
             price: productPrice,
             discountPrice: discountProductPrice,
@@ -67,20 +63,26 @@ const AddToCartBtn = ({
             selection: selection,
             image: productImage,
             type: product?.type,
-            // images: productImages || []
         };
-        addToCart(cartItem as ICartItem);
-        toast.success("Product added to cart");
+
+        try {
+            await addToCart(cartItem as ICartItem);
+            toast.success("Product added to cart");
+        } catch {
+            toast.error("Failed to add product to cart");
+        }
     };
 
     return (
         <Button
-            className="bg-shop_secondary text-dark transition rounded hover:cursor:pointer"
+            type="button"
+            size="icon"
+            aria-label="Add to cart"
+            className="h-9 w-9 shrink-0 rounded-full bg-shop_secondary text-shop_dark_primary shadow-sm transition hover:bg-shop_secondary/90 sm:h-10 sm:w-10"
             onClick={handleAddToCart}
             disabled={disabled}
         >
-            <BsCartPlus className="!w-6 !h-6" />
-
+            <ShoppingCart className="!h-4 !w-4 sm:!h-5 sm:!w-5" aria-hidden />
         </Button>
     );
 };

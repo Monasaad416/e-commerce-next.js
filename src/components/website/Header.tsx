@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import MainMenu from "./MainMenu";
 import MobileMenu from "./MobileMenu";
+import Image from "next/image";
+import logo from "@/assets/imgs/logo/logo.jpeg"
 
 export const Header = () => {
   const locale = useLocale();
-  const t = useTranslations();
 
   return (
     <header className="w-full">
@@ -18,11 +19,8 @@ export const Header = () => {
       {/* Mobile: slim bar — logo + menu only (cart / wishlist live in the sheet) */}
       <div className="sticky top-0 z-50 border-b border-white/10 bg-shop_dark_primary md:hidden">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-          <Link
-            href={`/${locale}`}
-            className="truncate text-lg font-bold tracking-tight text-shop_secondary"
-          >
-            {t("Menu.Logo")}
+       <Link href={`/${locale}`} className="flex items-center gap-3">
+            <Image src={logo} alt="logo" width={45} height={45} className="rounded-full object-cover" />
           </Link>
           <MobileMenu />
         </div>

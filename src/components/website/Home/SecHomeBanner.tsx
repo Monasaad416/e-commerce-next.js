@@ -1,17 +1,71 @@
-import { useLocale } from "next-intl"
+import Link from "next/link"
 import { resolveImageUrl } from "@/lib/media"
+import { getLocalizedString } from "@/lib/localizedField"
 import { BannerItem } from "./BannerItem"
 import Image from "next/image"
 
-type LocalizedField = Record<string, string | undefined>
-type SecHomeBannerContent = Record<string, unknown>
+type SecHomeBannerContent = Record<string, unknown> | undefined
 
-const SecHomeBanner = ({ content }: { content: SecHomeBannerContent }) => {
-  const locale = useLocale()
-  const dir = locale === "ar" ? "rtl" : "ltr"
-  const isRTL = locale === "ar"
-  const t = (key: string) => (content[key] as LocalizedField | undefined)?.[locale] || ""
-  const img = (key: string) => resolveImageUrl(content[key] as string | null | undefined)
+function partImageUrl(
+  content: SecHomeBannerContent,
+  key: string
+): string {
+  const path = content?.[key]
+  return typeof path === "string" && path.trim()
+    ? resolveImageUrl(path)
+    : ""
+}
+
+type SecHomeBannerProps = {
+  content: SecHomeBannerContent
+  lang: string
+}
+
+const SecHomeBanner = ({ content, lang }: SecHomeBannerProps) => {
+  const dir = lang === "ar" ? "rtl" : "ltr"
+
+  const localized = (key: string) =>
+    getLocalizedString(content?.[key], lang)
+
+  const btnLinkRaw =
+    typeof content?.sec_banner_sec_half_button_link === "string"
+      ? content.sec_banner_sec_half_button_link.trim()
+      : ""
+  const btnText = localized("sec_banner_sec_half_button_text").trim()
+
+  const secHalfImagePath =
+    typeof content?.sec_banner_sec_half_image === "string"
+      ? content.sec_banner_sec_half_image.trim()
+      : ""
+  const secHalfImageUrl = secHalfImagePath
+    ? resolveImageUrl(secHalfImagePath)
+    : ""
+
+  const secTitle = localized("sec_banner_sec_half_title").trim()
+  const secSubtitle = localized("sec_banner_sec_half_subtitle").trim()
+
+  const hasPart = (prefix: string) =>
+    localized(`${prefix}_title`).trim() ||
+    localized(`${prefix}_subtitle`).trim() ||
+    Boolean(
+      typeof content?.[`${prefix}_image`] === "string" &&
+        (content[`${prefix}_image`] as string).trim()
+    )
+
+  const hasFirstHalf =
+    hasPart("sec_banner_first_half_part1") ||
+    hasPart("sec_banner_first_half_part2") ||
+    hasPart("sec_banner_first_half_part3")
+
+  const hasSecHalf =
+    secTitle ||
+    secSubtitle ||
+    secHalfImagePath ||
+    (btnText && btnLinkRaw)
+
+  if (!hasFirstHalf && !hasSecHalf) {
+    return null
+  }
 
   return (
     <section dir={dir} className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -33,82 +87,90 @@ const SecHomeBanner = ({ content }: { content: SecHomeBannerContent }) => {
           style={{ backgroundColor: "rgba(117,84,58,0.12)" }}
         />
 
-        <div className={`mb-7 flex flex-col gap-4 ${isRTL ? "lg:flex-row-reverse" : "lg:flex-row"} lg:items-end lg:justify-between`}>
-          <div>
-            <p
-              className="mb-2 text-xs font-semibold uppercase tracking-[0.3em]"
-              style={{ color: "#8b7355" }}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-6">
+          {hasFirstHalf ? (
+            <div
+              className={`flex flex-col gap-4 ${hasSecHalf ? "lg:col-span-6" : "lg:col-span-12"}`}
             >
-              {isRTL ? "صناعة يدوية فاخرة" : "Handcrafted With Care"}
-            </p>
-            <h2
-              className="max-w-lg text-2xl font-bold leading-snug sm:text-3xl"
-              style={{ color: "#3d2b1f", fontFamily: "Georgia, 'Times New Roman', serif" }}
+              <BannerItem
+                image={partImageUrl(content, "sec_banner_first_half_part1_image")}
+                title={localized("sec_banner_first_half_part1_title")}
+                subtitle={localized("sec_banner_first_half_part1_subtitle")}
+              />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <BannerItem
+                  image={partImageUrl(content, "sec_banner_first_half_part2_image")}
+                  title={localized("sec_banner_first_half_part2_title")}
+                  subtitle={localized("sec_banner_first_half_part2_subtitle")}
+                />
+                <BannerItem
+                  image={partImageUrl(content, "sec_banner_first_half_part3_image")}
+                  title={localized("sec_banner_first_half_part3_title")}
+                  subtitle={localized("sec_banner_first_half_part3_subtitle")}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {hasSecHalf ? (
+            <div
+              className={`group relative flex min-h-[380px] flex-col justify-end overflow-hidden rounded-2xl lg:col-span-6 ${
+                !hasFirstHalf ? "lg:col-span-12" : ""
+              }`}
             >
-              {isRTL ? "مختارات الجلد الطبيعي" : "Curated Leather Collections"}
-            </h2>
-          </div>
-          <span
-            className="inline-flex w-fit rounded-full border px-3 py-1 text-xs font-medium"
-            style={{ borderColor: "#d5b894", color: "#7c5c3f", backgroundColor: "#f5ebdf" }}
-          >
-            {isRTL ? "تصميم عملي وأنيق" : "Modern craftsmanship"}
-          </span>
-        </div>
+              {secHalfImageUrl ? (
+                <div className="absolute inset-0">
+                  <Image
+                    src={secHalfImageUrl}
+                    fill
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                    alt={secTitle || ""}
+                    priority
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "linear-gradient(to top, rgba(35,22,10,0.82) 0%, rgba(35,22,10,0.3) 45%, transparent 100%)",
+                    }}
+                  />
+                </div>
+              ) : (
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundColor: "#3d2b1f" }}
+                  aria-hidden
+                />
+              )}
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-          <div className="group relative flex min-h-[380px] flex-col justify-end overflow-hidden rounded-2xl lg:col-span-7">
-            <div className="absolute inset-0">
-              <Image
-                src={img("sec_banner_sec_half_image")}
-                fill
-                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                alt={t("sec_banner_sec_half_title") || "banner"}
-                loading="eager"
-                unoptimized
-              />
-              <div
-                className="absolute inset-0"
-                style={{ background: "linear-gradient(to top, rgba(35,22,10,0.82) 0%, rgba(35,22,10,0.3) 45%, transparent 100%)" }}
-              />
+              <div className="relative z-10 p-7 sm:p-9">
+                {secTitle ? (
+                  <h2
+                    className="mb-2 max-w-sm text-2xl font-bold leading-tight text-white sm:text-3xl"
+                    style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+                  >
+                    {secTitle}
+                  </h2>
+                ) : null}
+                {secSubtitle ? (
+                  <p className="max-w-md text-sm leading-6 text-[rgba(255,255,255,0.72)]">
+                    {secSubtitle}
+                  </p>
+                ) : null}
+                {btnText && btnLinkRaw ? (
+                  <Link
+                    href={`/${lang}/${btnLinkRaw}`}
+                    className={`mt-6 inline-flex rounded-full border border-[#d2b183] bg-[#c9a96e] px-5 py-2.5 text-sm font-semibold text-[#26180f] shadow-sm outline-none transition hover:bg-[#d9bb87] focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:ring-offset-2 ${
+                      secHalfImageUrl ? "focus-visible:ring-offset-transparent" : ""
+                    }`}
+                  >
+                    {btnText}
+                  </Link>
+                ) : null}
+              </div>
             </div>
-
-            <div className="relative z-10 p-7 sm:p-9">
-              <span
-                className="mb-3 inline-block text-[10px] font-semibold uppercase tracking-[0.28em]"
-                style={{ color: "#c9a96e" }}
-              >
-                {isRTL ? "جديد الموسم" : "New Arrival"}
-              </span>
-              <h2
-                className="mb-2 max-w-sm text-2xl font-bold leading-tight text-white sm:text-3xl"
-                style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
-              >
-                {t("sec_banner_sec_half_title")}
-              </h2>
-              <p className="max-w-md text-sm leading-6 text-[rgba(255,255,255,0.72)]">
-                {t("sec_banner_sec_half_subtitle")}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-5 lg:grid-cols-1">
-            <BannerItem
-              image={img("sec_banner_first_half_part1_image")}
-              title={t("sec_banner_first_half_part1_title")}
-              subtitle={t("sec_banner_first_half_part1_subtitle")}
-            />
-            <BannerItem
-              image={img("sec_banner_first_half_part2_image")}
-              title={t("sec_banner_first_half_part2_title")}
-              subtitle={t("sec_banner_first_half_part2_subtitle")}
-            />
-            <BannerItem
-              image={img("sec_banner_first_half_part3_image")}
-              title={t("sec_banner_first_half_part3_title")}
-              subtitle={t("sec_banner_first_half_part3_subtitle")}
-            />
-          </div>
+          ) : null}
         </div>
       </div>
     </section>

@@ -6,9 +6,10 @@ export const IShipping = Z.object({
     city: Z.string().min(2, "City must be at least 2 characters long"),
     zipCode: Z.string().min(2, "Zip code must be at least 2 characters long"),
     country: Z.string().min(2, "Country must be at least 2 characters long"),
-    phone: Z.string().min(10, "Phone must be between 10 and 15 characters long")
-    .max(15, "Phone must be between 10 and 15 characters long")
-    .regex(/^[0-9]+$/, "Phone must be a valid phone number"),
+    phone: Z.string()
+        .min(8, "Phone must be a valid phone number")
+        .max(20, "Phone must be a valid phone number")
+        .regex(/^\+?[0-9]{7,19}$/, "Phone must be a valid phone number"),
     apartment: Z.string().optional(),
 })
 

@@ -2,19 +2,19 @@
 
 import { IProduct } from "@/interfaces/productType";
 import { Button } from "../ui/button";
-import { useCartStore } from "@/stores/cartStore";
+import { useWishlistStore } from "@/stores/wishlistStore";
 import { toast } from "react-toastify";
 import { IoHeartOutline } from "react-icons/io5";
 import { useTranslations } from "next-intl";
-import { ICartItem } from "@/interfaces/CartStoreStateType";
+import { IWishlistItem } from "@/interfaces/WishlistStoreStateType";
 
 interface AddToWishlistBtnProps {
-    product: IProduct;
-    selection: {};
-    qty: number;
-    disabled?: boolean;
-    priceOverride?: number;
-    imageOverride?: string;
+  product: IProduct;
+  selection: object;
+  qty: number;
+  disabled?: boolean;
+  priceOverride?: number;
+  imageOverride?: string;
 }
 
 const AddToWishlistBtn = ({
@@ -25,10 +25,9 @@ const AddToWishlistBtn = ({
   priceOverride,
   imageOverride,
 }: AddToWishlistBtnProps) => {
-    const addToCart = useCartStore(state => state.addToCart);
+    const addToWishlist = useWishlistStore(state => state.addToWishlist);
     const t = useTranslations();
 
-    let type="";
     let productImage = imageOverride || "";
     let productPrice = priceOverride ?? 0;
 
@@ -42,8 +41,8 @@ const AddToWishlistBtn = ({
       }
     }
 
-    const handleAddToCart = () => {
-        const cartItem = {
+    const handleAddToWishlist = () => {
+        const wishlistItem = {
             id: String(product.id),
             name: product.name,
             price: productPrice,
@@ -51,18 +50,20 @@ const AddToWishlistBtn = ({
             selection: selection,
             image: productImage
         };
-        addToCart(cartItem as ICartItem);
-        toast.success("Product added to cart");
+        addToWishlist(wishlistItem as IWishlistItem);
+        toast.success("Product added to wishlist");
     };
 
     return (
         <Button
-            className="border border-gray-300 py-6 font-semibold bg-shop_white text-shop_dark_primary hover:bg-shop_dark_primary hover:text-shop_white transition"
-            onClick={handleAddToCart}
+            type="button"
+            variant="default"
+            className="bg-shop_secondary text-dark transition rounded hover:cursor-pointer hover:bg-shop_secondary/90"
+            onClick={handleAddToWishlist}
             disabled={disabled}
+            aria-label={t("Cart.AddToWishlist")}
         >
-            <IoHeartOutline className="mr-1 h-5 w-5" />
-            {t("Cart.AddToWishlist")}
+            <IoHeartOutline className="!h-6 !w-6" aria-hidden />
         </Button>
     );
 };

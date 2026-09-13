@@ -1,64 +1,79 @@
+import { useMemo } from 'react';
+import { ShieldCheck, Truck } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
 import { useCartStore } from '@/stores/cartStore';
 
 const OrderSummary = () => {
-  const { cart } = useCartStore();
+    const cart = useCartStore((s) => s.cart);
+    const t = useTranslations();
 
-  const subtotal = cart.reduce(
-    (acc, item) => acc + item.price * item.qty,
-    0
-  );
+    // Derive totals from `cart` so +/- reflects instantly for guests and logged-in
+    // users alike (the store's `subtotal` is only refreshed after a backend sync).
+    const subtotal = useMemo(
+        () =>
+            cart
+                .filter((i) => i.is_available !== false)
+                .reduce((sum, i) => sum + Number(i.price ?? 0) * Number(i.qty ?? 0), 0),
+        [cart],
+    );
 
-  const shipping = 0;
-  const total = subtotal + shipping;
+    const shipping = 0;
+    const total = subtotal + shipping;
+    const availableItemsCount = cart.filter((i) => i.is_available !== false).length;
 
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-6">
-      
-      {/* Title */}
-      <h3 className="text-lg font-semibold text-gray-900 mb-5">
-        Order Summary
-      </h3>
+    return (
+        <aside className="sticky top-24 rounded-2xl border border-shop_light_gray/15 bg-shop_dark_primary/50 p-6 shadow-lg shadow-black/20">
+            <div className="mb-5 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-shop_white">
+                    {t('Cart.Review')}
+                </h3>
+                <span className="rounded-full border border-shop_secondary/30 bg-shop_secondary/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-shop_secondary">
+                    {availableItemsCount}/{cart.length}
+                </span>
+            </div>
 
-      {/* Items Count */}
-      <p className="text-sm text-gray-500 mb-4">
-        {cart.length} items
-      </p>
+            <p className="mb-5 text-xs text-shop_light_gray/70">
+                {availableItemsCount} / {cart.length} items available
+            </p>
 
-      {/* Divider */}
-      <div className="border-t border-gray-100 mb-4"></div>
+            <div className="space-y-3 border-t border-shop_light_gray/10 pt-4">
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-shop_light_gray/85">Subtotal</span>
+                    <span className="font-medium text-shop_white">
+                        ${subtotal.toFixed(2)}
+                    </span>
+                </div>
 
-      {/* Subtotal */}
-      <div className="flex justify-between text-sm text-gray-600 mb-3">
-        <span>Subtotal</span>
-        <span className="font-medium text-gray-900">
-          ${subtotal.toFixed(2)}
-        </span>
-      </div>
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-shop_light_gray/85">Shipping</span>
+                    <span className="font-semibold text-emerald-300">Free</span>
+                </div>
+            </div>
 
-      {/* Shipping */}
-      <div className="flex justify-between text-sm text-gray-600 mb-3">
-        <span>Shipping</span>
-        <span className="text-green-600 font-medium">
-          Free
-        </span>
-      </div>
+            <div className="my-5 h-px bg-shop_light_gray/15" />
 
-      {/* Divider */}
-      <div className="border-t border-gray-200 my-4"></div>
+            <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold uppercase tracking-wide text-shop_light_gray/80">
+                    Total
+                </span>
+                <span className="text-2xl font-bold text-shop_secondary">
+                    ${total.toFixed(2)}
+                </span>
+            </div>
 
-      {/* Total */}
-      <div className="flex justify-between text-base font-semibold text-gray-900 mb-6">
-        <span>Total</span>
-        <span>${total.toFixed(2)}</span>
-      </div>
-
-      {/* Button */}
-      <button className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition">
-        Proceed to Checkout
-      </button>
-
-    </div>
-  );
+            <ul className="mt-6 space-y-2 rounded-xl border border-shop_light_gray/10 bg-shop_dark_primary/40 p-3 text-xs text-shop_light_gray/80">
+                <li className="flex items-center gap-2">
+                    <Truck className="h-3.5 w-3.5 shrink-0 text-shop_secondary" />
+                    <span>{t('Products.TrustFreeDelivery')}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                    <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-shop_secondary" />
+                    <span>{t('Products.TrustSecurePayment')}</span>
+                </li>
+            </ul>
+        </aside>
+    );
 };
 
 export default OrderSummary;

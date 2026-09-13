@@ -1,5 +1,6 @@
-import {getRequestConfig} from 'next-intl/server';
-import {routing} from './routings';
+import { getRequestConfig } from "next-intl/server";
+import { routing } from "./routings";
+import { APP_TIME_ZONE } from "./constants";
 
 // export default getRequestConfig(async ({requestLocale}) => {
 //   // This typically corresponds to the `[locale]` segment
@@ -28,5 +29,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
   return {
     locale,
     messages: (await import(`../../messages/${locale}.json`)).default,
-  }
-})
+    timeZone: APP_TIME_ZONE,
+  };
+});

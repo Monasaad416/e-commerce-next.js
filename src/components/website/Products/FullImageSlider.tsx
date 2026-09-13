@@ -6,14 +6,18 @@ import { Navigation } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/navigation'
 
-export default function FullImageSlider({ 
+export default function FullImageSlider({
   images = [],
-  onClose 
-}: { 
-  images: string[] 
-  onClose: () => void 
+  onClose,
+  initialIndex = 0,
+}: {
+  images: string[];
+  onClose: () => void;
+  initialIndex?: number;
 }) {
-  if (!images.length) return null
+  if (!images.length) return null;
+
+  const start = Math.max(0, Math.min(initialIndex, images.length - 1));
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90">
@@ -29,6 +33,7 @@ export default function FullImageSlider({
         navigation
         spaceBetween={30}
         slidesPerView={1}
+        initialSlide={start}
         className="w-full h-full"
       >
         {images.map((img, i) => (

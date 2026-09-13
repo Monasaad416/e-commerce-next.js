@@ -9,12 +9,19 @@ interface UseProductsOptions
   > {
   limit?: number;
   locale: string;
+  /** Load every paginated page from the API (shop). */
+  fetchAll?: boolean;
 }
 
-export function useProducts({ locale, limit, ...options }: UseProductsOptions) {
+export function useProducts({
+  locale,
+  limit,
+  fetchAll,
+  ...options
+}: UseProductsOptions) {
   return useQuery<ProductsResponse, Error>({
-    queryKey: ["products", locale, limit],
-    queryFn: () => fetchProducts(locale), 
+    queryKey: ["products", locale, limit, fetchAll],
+    queryFn: () => fetchProducts(locale, { fetchAll }),
     ...options,
     select: (data) => {
       if (limit) {
