@@ -1,19 +1,30 @@
-import Z from "zod";
-export const IShipping = Z.object({
-    firstName: Z.string().min(2, "First name must be at least 2 characters long"),
-    lastName: Z.string().min(2, "Last name must be at least 2 characters long"),
-    address: Z.string().min(2, "Address must be at least 2 characters long"),
-    city: Z.string().min(2, "City must be at least 2 characters long"),
-    zipCode: Z.string().min(2, "Zip code must be at least 2 characters long"),
-    country: Z.string().min(2, "Country must be at least 2 characters long"),
-    phone: Z.string()
-        .min(8, "Phone must be a valid phone number")
-        .max(20, "Phone must be a valid phone number")
-        .regex(/^\+?[0-9]{7,19}$/, "Phone must be a valid phone number"),
-    apartment: Z.string().optional(),
-})
+import { z } from "zod";
+import { isValidPhoneNumber } from "react-phone-number-input";
 
+export const IShipping = z.object({
+  firstName: z
+    .string()
+    .trim()
+    .min(2, "First name must be at least 2 characters long"),
+  lastName: z
+    .string()
+    .trim()
+    .min(2, "Last name must be at least 2 characters long"),
+  address: z
+    .string()
+    .trim()
+    .min(2, "Address must be at least 2 characters long"),
+  city: z.string().trim().min(2, "City is required"),
+  zipCode: z.string().trim().optional().nullable(),
+  country: z.string().trim().min(2, "Country is required"),
+  phone: z
+    .string()
+    .trim()
+    .min(1, "Phone number is required")
+    .refine((value) => isValidPhoneNumber(value), {
+      message: "Enter a valid phone number with country code",
+    }),
+  apartment: z.string().trim().optional(),
+});
 
-export type ShippingType = Z.infer<typeof IShipping>;
-
-
+export type ShippingType = z.infer<typeof IShipping>;

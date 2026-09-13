@@ -8,6 +8,12 @@ import { useLocalizedValue } from '@/hooks/useLocalizedValue';
 import { resolveImageUrl } from '@/lib/media';
 import { cn } from '@/lib/utils';
 import QtyBtns from './QtyBtns';
+import { formatMoney } from '@/lib/formatMoney';
+import {
+    getCartLineTotal,
+    getCartUnitPrice,
+    hasCartDiscount,
+} from '@/lib/cartPricing';
 
 const OrderDetailsStep = ({}: { currentStep?: number } = {}) => {
     const { cart, removeFromCart } = useCartStore();
@@ -46,7 +52,9 @@ const OrderDetailsStep = ({}: { currentStep?: number } = {}) => {
                         item?.selection?.image || item?.image || noImage.src,
                         );
                         const unavailable = item?.is_available === false;
-                        const total = (item?.price ?? 0) * (item?.qty ?? 0);
+                        const unitPrice = getCartUnitPrice(item);
+                        const lineTotal = getCartLineTotal(item);
+                        const onSale = hasCartDiscount(item);
 
                         const selectionLine = Object.entries(item?.selection || {})
                             .filter(([key]) => key !== 'image' && key !== 'product_variant_id')
@@ -96,10 +104,19 @@ const OrderDetailsStep = ({}: { currentStep?: number } = {}) => {
                                         {/* Mobile-only price + total */}
                                         <div className="mt-3 flex items-center gap-4 md:hidden">
                                             <span className="text-xs text-shop_light_gray/70">
-                                                ${item?.price}
+                                                {onSale ? (
+                                                    <>
+                                                        <span className="me-1.5 line-through opacity-60">
+                                                            {formatMoney(item.price)}
+                                                        </span>
+                                                        {formatMoney(unitPrice)}
+                                                    </>
+                                                ) : (
+                                                    formatMoney(unitPrice)
+                                                )}
                                             </span>
                                             <span className="text-sm font-semibold text-shop_secondary">
-                                                ${total.toFixed(2)}
+                                                {formatMoney(lineTotal)}
                                             </span>
                                         </div>
                                     </div>
@@ -107,7 +124,16 @@ const OrderDetailsStep = ({}: { currentStep?: number } = {}) => {
 
                                 {/* Price cell - desktop */}
                                 <div className="hidden text-sm font-medium text-shop_light_gray md:block">
-                                    ${item?.price}
+                                    {onSale ? (
+                                        <div className="space-y-0.5">
+                                            <p className="text-xs line-through opacity-60">
+                                                {formatMoney(item.price)}
+                                            </p>
+                                            <p>{formatMoney(unitPrice)}</p>
+                                        </div>
+                                    ) : (
+                                        formatMoney(unitPrice)
+                                    )}
                                 </div>
 
                                 {/* Qty cell */}
@@ -123,7 +149,7 @@ const OrderDetailsStep = ({}: { currentStep?: number } = {}) => {
 
                                 {/* Total cell - desktop */}
                                 <div className="hidden text-sm font-semibold text-shop_secondary md:block">
-                                    ${total.toFixed(2)}
+                                    {formatMoney(lineTotal)}
                                 </div>
 
                                 {/* Remove */}

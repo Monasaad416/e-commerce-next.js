@@ -38,7 +38,10 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({ token: state.token, name: state.name }),
 
       onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true)
+        // Defer so subscribed components aren't updated before mount (React 19).
+        queueMicrotask(() => {
+          state?.setHasHydrated(true)
+        })
       },
     }
   )

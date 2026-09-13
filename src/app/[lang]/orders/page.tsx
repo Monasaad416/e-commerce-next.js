@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useAuthStore } from "@/stores/authStore";
-import { useRouter } from "next/navigation";
+import { formatMoney } from "@/lib/formatMoney";
 
 export default function Orders() {
   const locale = useLocale();
   const t = useTranslations();
-  const router = useRouter();
+
 
   const { token, name } = useAuthStore();
 
@@ -100,7 +100,7 @@ export default function Orders() {
                 </td>
 
                 <td className="p-4 font-medium">
-                  ${order.total}
+                  {formatMoney(order.total)}
                 </td>
 
                 <td className="p-4">

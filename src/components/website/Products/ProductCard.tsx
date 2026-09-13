@@ -10,6 +10,7 @@ import { useLocalizedValue } from "@/hooks/useLocalizedValue";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { IoHeartOutline } from "react-icons/io5";
+import { formatMoney } from "@/lib/formatMoney";
 
 /* ---------------- Main Component ---------------- */
 
@@ -125,11 +126,11 @@ export default function ProductCard({ product }: { product: IProduct }) {
           <div className="min-w-0 flex-1">
             {showStrike && (
               <p className="text-[11px] text-[#9a8369] line-through sm:text-sm">
-                ${numericPrice.toFixed(2)}
+                {formatMoney(numericPrice)}
               </p>
             )}
             <p className="truncate text-base font-bold text-[#3d2b1f] sm:text-lg">
-              ${(showStrike ? numericDiscount : numericPrice).toFixed(2)}
+              {formatMoney(showStrike ? numericDiscount : numericPrice)}
             </p>
           </div>
 

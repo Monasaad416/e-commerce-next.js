@@ -6,6 +6,7 @@ import { API_URLS } from "@/app/Services/Urls"
 import getAuthHeaders from "@/lib/getAuthHeaders"
 import getAuthToken from "@/lib/getAuthToken"
 import { BackendApiMessage, BackendCartItem, BackendCartPayload } from "@/types/cart"
+import { getCartUnitPrice } from "@/lib/cartPricing"
 
 
 
@@ -30,11 +31,9 @@ function buildAddToCartPayload(item: ICartItem) {
       ? String(item.selection.product_variant_id)
       : null)
 
-  const price = Number(item.price) || 0
   const discountPrice = Number(item.discountPrice ?? 0)
   const qty = Number(item.qty) || 1
-  const unitPrice =
-    discountPrice > 0 && discountPrice < price ? discountPrice : price
+  const unitPrice = getCartUnitPrice(item)
 
   return {
     product_id: Number(item.id),
@@ -445,9 +444,18 @@ export const useCartStore = create<ICartStoreState & ICartStoreActions>()(
     }),
     {
       name: "cart-storage",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? localStorage : {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {},
+        }
+      ),
       onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true)
+        // Defer so subscribed components aren't updated before mount (React 19).
+        queueMicrotask(() => {
+          state?.setHasHydrated(true)
+        })
       },
     }
   )

@@ -21,6 +21,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useLocalizedValue } from '@/hooks/useLocalizedValue';
 import { PaginationDemo } from '@/components/website/PaginatioDemo';
 import CustomLoader from '@/components/customLoader/CustomLoader';
+import { formatMoney } from '@/lib/formatMoney';
 import {
   getDistinctProductColorLabels,
   productMatchesColorFilter,
@@ -195,8 +196,8 @@ export default function ShopClient({ lang }: ShopClientProps) {
                     className="mt-3 price-slider"
                   />
                   <div className="mt-2 flex justify-between text-xs text-[#7c6348]">
-                    <span>${priceRange[0]}</span>
-                    <span>${priceRange[1]}</span>
+                    <span>{formatMoney(priceRange[0], { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                    <span>{formatMoney(priceRange[1], { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                   </div>
                 </div>
               </CollapsibleContent>

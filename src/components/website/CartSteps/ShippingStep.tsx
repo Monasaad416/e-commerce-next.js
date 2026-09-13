@@ -57,7 +57,17 @@ const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(
         } = useForm<ShippingType>({
             mode: "onChange",
             resolver: zodResolver(IShipping),
-            defaultValues: formData || {},
+            defaultValues: {
+                firstName: "",
+                lastName: "",
+                address: "",
+                city: "",
+                zipCode: "",
+                country: "",
+                phone: "",
+                apartment: "",
+                ...(formData || {}),
+            },
         });
 
         const t = useTranslations("Shipping");
@@ -70,7 +80,7 @@ const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(
         const phoneValue = useWatch({ control, name: "phone" });
         const phone = (phoneValue || undefined) as PhoneValue | undefined;
 
-        // Register phone manually (controlled by PhoneInput); include validation
+        // Register phone / location fields controlled outside native inputs
         useEffect(() => {
             register("phone");
             register("country");
@@ -79,7 +89,17 @@ const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(
 
         useEffect(() => {
             if (formData) {
-                reset(formData);
+                reset({
+                    firstName: "",
+                    lastName: "",
+                    address: "",
+                    city: "",
+                    zipCode: "",
+                    country: "",
+                    phone: "",
+                    apartment: "",
+                    ...formData,
+                });
             }
         }, [formData, reset]);
 
@@ -88,8 +108,18 @@ const ShippingStep = forwardRef<ShippingStepRef, ShippingStepProps>(
             () => ({
                 async validate() {
                     try {
-                        const isValid = await trigger();
-                        if (!isValid) return { valid: false, data: null };
+                        const isValid = await trigger(undefined, {
+                            shouldFocus: true,
+                        });
+                        if (!isValid) {
+                            document
+                                .getElementById("shipping-form")
+                                ?.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                });
+                            return { valid: false, data: null };
+                        }
 
                         const values = getValues();
                         const shippingData: ShippingType = {

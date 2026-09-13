@@ -322,9 +322,18 @@ export const useWishlistStore = create<
     }),
     {
       name: "wishlist-storage",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? localStorage : {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {},
+        }
+      ),
       onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true)
+        // Defer so subscribed components aren't updated before mount (React 19).
+        queueMicrotask(() => {
+          state?.setHasHydrated(true)
+        })
       },
     }
   )

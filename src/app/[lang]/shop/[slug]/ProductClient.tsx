@@ -19,6 +19,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { resolveImageUrl } from "@/lib/media";
+import { formatMoney } from "@/lib/formatMoney";
 
 import { useLocalizedValue } from "@/hooks/useLocalizedValue";
 import { useProduct } from "@/hooks/useProduct";
@@ -207,16 +208,7 @@ export default function ProductClient({
     return "";
   }, [product, matchedVariant]);
 
-  const formattedPrice = useMemo(
-    () =>
-      new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(price),
-    [price]
-  );
+  const formattedPrice = useMemo(() => formatMoney(price), [price]);
 
   const stockQty = useMemo(() => {
     if (!product) return 0;

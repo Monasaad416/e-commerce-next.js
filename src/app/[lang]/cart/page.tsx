@@ -214,10 +214,7 @@ const Cart = () => {
         if (activeStep === 2) {
             if (!shippingRef.current) return;
             const { valid, data } = await shippingRef.current.validate();
-            if (!valid || !data) {
-                console.error('Validation failed');
-                return;
-            }
+            if (!valid || !data) return;
             setFormData(data);
             const sessionUrl = await placeOrder(data);
             // Only redirect on a real success — otherwise stay on step 2 so

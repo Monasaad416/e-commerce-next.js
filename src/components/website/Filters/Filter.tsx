@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { cn } from '@/lib/utils';
+import { formatMoney } from '@/lib/formatMoney';
 
 interface SliderProps {
   className?: string;
@@ -69,8 +70,14 @@ const Filter = ({ className, ...props }: SliderProps) => {
 
       <div className="w-[30%] px-4">
         <div className="flex justify-between text-sm mb-2">
-          <span className="text-shop_dark font-bold">${minPrice}</span>
-          <span className="text-shop_dark font-bold">${maxPrice === 1000 ? '1000+' : maxPrice}</span>
+          <span className="text-shop_dark font-bold">
+            {formatMoney(minPrice, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+          </span>
+          <span className="text-shop_dark font-bold">
+            {maxPrice === 1000
+              ? `${formatMoney(1000, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}+`
+              : formatMoney(maxPrice, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+          </span>
         </div>
         <div className="px-4">
           <Slider

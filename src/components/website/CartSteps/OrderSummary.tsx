@@ -3,6 +3,8 @@ import { ShieldCheck, Truck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { useCartStore } from '@/stores/cartStore';
+import { formatMoney } from '@/lib/formatMoney';
+import { getCartUnitPrice } from '@/lib/cartPricing';
 
 const OrderSummary = () => {
     const cart = useCartStore((s) => s.cart);
@@ -14,7 +16,10 @@ const OrderSummary = () => {
         () =>
             cart
                 .filter((i) => i.is_available !== false)
-                .reduce((sum, i) => sum + Number(i.price ?? 0) * Number(i.qty ?? 0), 0),
+                .reduce(
+                    (sum, i) => sum + getCartUnitPrice(i) * Number(i.qty ?? 0),
+                    0,
+                ),
         [cart],
     );
 
@@ -41,7 +46,7 @@ const OrderSummary = () => {
                 <div className="flex items-center justify-between text-sm">
                     <span className="text-shop_light_gray/85">Subtotal</span>
                     <span className="font-medium text-shop_white">
-                        ${subtotal.toFixed(2)}
+                        {formatMoney(subtotal)}
                     </span>
                 </div>
 
@@ -58,7 +63,7 @@ const OrderSummary = () => {
                     Total
                 </span>
                 <span className="text-2xl font-bold text-shop_secondary">
-                    ${total.toFixed(2)}
+                    {formatMoney(total)}
                 </span>
             </div>
 
