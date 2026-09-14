@@ -13,6 +13,7 @@ import getAuthHeaders from "@/lib/getAuthHeaders";
 import {
   asRecord,
   extractOrderDetail,
+  findOrderDetailInList,
   formatAddress,
   formatOrderDateFromOrder,
   orderItemName,
@@ -52,11 +53,34 @@ export default function OrderDetailsPage() {
     const id = orderId;
     let cancelled = false;
 
+    async function loadFromOrdersList(): Promise<OrderDetail | null> {
+      const listRes = await fetch(API_URLS.ORDER.GET_ALL_ORDERS(locale), {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+
+      if (listRes.status === 401) {
+        useAuthStore.getState().setToken(null);
+        throw new Error(t("Auth.authentication_failed"));
+      }
+
+      const listPayload = await listRes.json();
+      if (!listRes.ok) {
+        const msg = asRecord(listPayload)?.message;
+        throw new Error(
+          typeof msg === "string" ? msg : t("Orders.LoadFailed"),
+        );
+      }
+
+      return findOrderDetailInList(listPayload, id);
+    }
+
     async function loadOrder() {
       setLoading(true);
       setError(null);
 
       try {
+        // 1) Prefer show endpoint when Laravel has it
         const response = await fetch(API_URLS.ORDER.GET_ORDER(locale, id), {
           method: "GET",
           headers: getAuthHeaders(),
@@ -71,6 +95,14 @@ export default function OrderDetailsPage() {
           return;
         }
 
+        // 2) Show route missing / not found → fall back to GET /orders list
+        if (response.status === 404) {
+          const fromList = await loadFromOrdersList();
+          if (!fromList) throw new Error(t("Orders.NotFound"));
+          if (!cancelled) setDetail(fromList);
+          return;
+        }
+
         const payload = await response.json();
         const payloadRecord = asRecord(payload);
         const apiMessage =
@@ -80,12 +112,27 @@ export default function OrderDetailsPage() {
               ? payloadRecord.error
               : null;
 
-        if (!response.ok) {
+        // Laravel sometimes returns 404 body with 200, or "route could not be found"
+        const routeMissing =
+          typeof apiMessage === "string" &&
+          /could not be found/i.test(apiMessage);
+
+        if (!response.ok || routeMissing) {
+          const fromList = await loadFromOrdersList();
+          if (fromList) {
+            if (!cancelled) setDetail(fromList);
+            return;
+          }
           throw new Error(apiMessage ?? t("Orders.NotFound"));
         }
 
         const parsed = extractOrderDetail(payload);
         if (!parsed) {
+          const fromList = await loadFromOrdersList();
+          if (fromList) {
+            if (!cancelled) setDetail(fromList);
+            return;
+          }
           throw new Error(apiMessage ?? t("Orders.NotFound"));
         }
 
@@ -212,8 +259,11 @@ export default function OrderDetailsPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className="border-b last:border-0">
+                {items.map((item, index) => (
+                  <tr
+                    key={item.id || `${item.product_id}-${index}`}
+                    className="border-b last:border-0"
+                  >
                     <td className="p-4">
                       <div className="font-medium text-gray-800">
                         {orderItemName(item)}

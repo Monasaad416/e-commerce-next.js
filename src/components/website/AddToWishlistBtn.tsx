@@ -7,6 +7,8 @@ import { toast } from "react-toastify";
 import { IoHeartOutline, IoHeart } from "react-icons/io5";
 import { useTranslations } from "next-intl";
 import { IWishlistItem } from "@/interfaces/WishlistStoreStateType";
+import { cn } from "@/lib/utils";
+import { useLocalizedValue } from "@/hooks/useLocalizedValue";
 
 interface AddToWishlistBtnProps {
   product: IProduct;
@@ -15,6 +17,9 @@ interface AddToWishlistBtnProps {
   disabled?: boolean;
   priceOverride?: number;
   imageOverride?: string;
+  /** `card` = corner chip on product cards; `default` = PDP / solid button */
+  variant?: "default" | "card";
+  className?: string;
 }
 
 const AddToWishlistBtn = ({
@@ -24,6 +29,8 @@ const AddToWishlistBtn = ({
   disabled,
   priceOverride,
   imageOverride,
+  variant = "default",
+  className,
 }: AddToWishlistBtnProps) => {
   const addToWishlist = useWishlistStore((state) => state.addToWishlist);
   const removeFromWishlist = useWishlistStore(
@@ -31,14 +38,21 @@ const AddToWishlistBtn = ({
   );
   const wishlist = useWishlistStore((state) => state.wishlist);
   const t = useTranslations();
+  const tValue = useLocalizedValue();
 
   const selectionTyped = selection as IWishlistItem["selection"];
-  const inWishlist = wishlist.some(
-    (item) =>
-      item.id === String(product.id) &&
+
+  // Cards: treat any saved row for this product as “in wishlist”.
+  // PDP: match product + selection (variant).
+  const matched = wishlist.find((item) => {
+    if (item.id !== String(product.id)) return false;
+    if (variant === "card") return true;
+    return (
       JSON.stringify(item.selection ?? {}) ===
-        JSON.stringify(selectionTyped ?? {}),
-  );
+      JSON.stringify(selectionTyped ?? {})
+    );
+  });
+  const inWishlist = Boolean(matched);
 
   let productImage = imageOverride || "";
   let productPrice = priceOverride ?? 0;
@@ -64,13 +78,18 @@ const AddToWishlistBtn = ({
     }
   }
 
-  const handleToggleWishlist = async () => {
+  const handleToggleWishlist = async (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
     const selectionVariantId = selectionTyped?.product_variant_id;
     const variantId = product?.variants?.[0]?.id ?? selectionVariantId;
 
-    if (inWishlist) {
+    if (inWishlist && matched) {
       try {
-        await removeFromWishlist(String(product.id), selectionTyped);
+        await removeFromWishlist(String(product.id), matched.selection);
         toast.success(t("Wishlist.Removed"));
       } catch {
         toast.error(t("Wishlist.RemoveFailed"));
@@ -80,10 +99,7 @@ const AddToWishlistBtn = ({
 
     const wishlistItem: IWishlistItem = {
       id: String(product.id),
-      name:
-        typeof product.name === "string"
-          ? product.name
-          : String(product.name ?? ""),
+      name: tValue(product.name) || String(product.name ?? ""),
       price: productPrice,
       discountPrice: discountProductPrice,
       qty,
@@ -105,16 +121,49 @@ const AddToWishlistBtn = ({
     }
   };
 
+  if (variant === "card") {
+    return (
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        className={cn(
+          "h-7 w-7 rounded-full bg-[#fffaf2]/90 text-[#6b5236] shadow-sm backdrop-blur-[2px]",
+          "hover:bg-[#fffaf2] hover:text-shop_secondary",
+          "sm:h-8 sm:w-8",
+          inWishlist && "text-shop_secondary",
+          className,
+        )}
+        onClick={handleToggleWishlist}
+        disabled={disabled}
+        aria-label={
+          inWishlist ? t("Wishlist.Remove") : t("Cart.AddToWishlist")
+        }
+        aria-pressed={inWishlist}
+      >
+        {inWishlist ? (
+          <IoHeart className="!h-4 !w-4 sm:!h-5 sm:!w-5" aria-hidden />
+        ) : (
+          <IoHeartOutline className="!h-4 !w-4 sm:!h-5 sm:!w-5" aria-hidden />
+        )}
+      </Button>
+    );
+  }
+
   return (
     <Button
       type="button"
       variant="default"
-      className="bg-shop_secondary text-dark transition rounded hover:cursor-pointer hover:bg-shop_secondary/90"
-      onClick={() => void handleToggleWishlist()}
+      className={cn(
+        "bg-shop_secondary text-dark transition rounded hover:cursor-pointer hover:bg-shop_secondary/90",
+        className,
+      )}
+      onClick={handleToggleWishlist}
       disabled={disabled}
       aria-label={
         inWishlist ? t("Wishlist.Remove") : t("Cart.AddToWishlist")
       }
+      aria-pressed={inWishlist}
     >
       {inWishlist ? (
         <IoHeart className="!h-6 !w-6" aria-hidden />

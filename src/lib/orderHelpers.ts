@@ -32,14 +32,120 @@ function normalizeOrder(raw: Record<string, unknown>): IOrder {
   };
 }
 
+/** Arrays, or Laravel Resource collections: { data: [...] }. */
+function coerceArray(value: unknown): unknown[] | null {
+  if (Array.isArray(value)) return value;
+  const obj = asRecord(value);
+  if (obj && Array.isArray(obj.data)) return obj.data;
+  return null;
+}
+
+function looksLikeOrderItem(value: unknown): boolean {
+  const obj = unwrapData(value) ?? asRecord(value);
+  if (!obj) return false;
+  return (
+    "product_id" in obj ||
+    "productId" in obj ||
+    "order_id" in obj ||
+    ("qty" in obj && ("price" in obj || "total" in obj || "subtotal" in obj)) ||
+    ("quantity" in obj && ("price" in obj || "total" in obj))
+  );
+}
+
+function localizeName(value: unknown): string | undefined {
+  if (typeof value === "string" && value.trim()) return value;
+  const obj = asRecord(value);
+  if (!obj) return undefined;
+  const en = obj.en;
+  const ar = obj.ar;
+  if (typeof en === "string" && en.trim()) return en;
+  if (typeof ar === "string" && ar.trim()) return ar;
+  return undefined;
+}
+
+function normalizeOrderItem(raw: Record<string, unknown>): IOrderItem {
+  const product = asRecord(raw.product);
+  const name =
+    localizeName(raw.name) ||
+    localizeName(raw.product_name) ||
+    localizeName(raw.productName) ||
+    localizeName(product?.name) ||
+    localizeName(product?.title);
+
+  return {
+    id: Number(raw.id ?? 0),
+    order_id: Number(raw.order_id ?? raw.orderId ?? 0),
+    product_id: Number(raw.product_id ?? raw.productId ?? product?.id ?? 0),
+    product_variant_id:
+      raw.product_variant_id != null
+        ? Number(raw.product_variant_id)
+        : raw.productVariantId != null
+          ? Number(raw.productVariantId)
+          : undefined,
+    name,
+    image:
+      (typeof raw.image === "string" && raw.image) ||
+      (typeof product?.image === "string" && product.image) ||
+      undefined,
+    qty: Number(raw.qty ?? raw.quantity ?? 1),
+    price: Number(raw.price ?? 0),
+    discount_price: Number(raw.discount_price ?? raw.discountPrice ?? 0),
+    subtotal: Number(raw.subtotal ?? 0),
+    total: Number(raw.total ?? raw.subtotal ?? raw.price ?? 0),
+    product: product
+      ? {
+          id: product.id != null ? Number(product.id) : undefined,
+          name: localizeName(product.name),
+          image: typeof product.image === "string" ? product.image : undefined,
+          slug: typeof product.slug === "string" ? product.slug : undefined,
+        }
+      : undefined,
+  };
+}
+
 function extractItems(...candidates: unknown[]): IOrderItem[] {
   for (const value of candidates) {
-    if (!Array.isArray(value)) continue;
-    return value
+    const arr = coerceArray(value);
+    if (!arr?.length) continue;
+
+    const mapped = arr
       .map((item) => unwrapData(item) ?? asRecord(item))
-      .filter(Boolean)
-      .map((item) => item as unknown as IOrderItem);
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map(normalizeOrderItem);
+
+    if (mapped.length) return mapped;
   }
+  return [];
+}
+
+/** Pull items from common Laravel relation / resource keys on an order object. */
+function collectItemsFromOrder(order: Record<string, unknown>): IOrderItem[] {
+  const keys = [
+    "items",
+    "order_items",
+    "orderItems",
+    "products",
+    "lines",
+    "order_lines",
+    "details",
+    "orderDetails",
+  ];
+
+  for (const key of keys) {
+    const found = extractItems(order[key]);
+    if (found.length) return found;
+  }
+
+  // Last resort: any nested array/resource that looks like line items
+  for (const value of Object.values(order)) {
+    const arr = coerceArray(value);
+    if (!arr?.length) continue;
+    if (arr.some(looksLikeOrderItem)) {
+      const found = extractItems(arr);
+      if (found.length) return found;
+    }
+  }
+
   return [];
 }
 
@@ -61,8 +167,9 @@ export function extractOrders(payload: unknown): IOrder[] {
   ];
 
   for (const value of candidates) {
-    if (!Array.isArray(value)) continue;
-    return value
+    const arr = coerceArray(value);
+    if (!arr) continue;
+    return arr
       .map((row) => unwrapData(row) ?? asRecord(row))
       .filter(looksLikeOrder)
       .map((row) => normalizeOrder(row!));
@@ -75,7 +182,7 @@ export function extractOrders(payload: unknown): IOrder[] {
  * Handles:
  * - { success, data: OrderResource } → often { data: { data: order } }
  * - { data: { order, items } }
- * - { order, items }
+ * - items as Resource collection: { data: [ ... ] }
  */
 export function extractOrderDetail(payload: unknown): OrderDetail | null {
   const root = asRecord(payload);
@@ -98,18 +205,40 @@ export function extractOrderDetail(payload: unknown): OrderDetail | null {
 
   const items = extractItems(
     root.items,
+    root.order_items,
     dataLayer?.items,
     dataLayer?.order_items,
+    dataLayer?.orderItems,
     unwrapped?.items,
     unwrapped?.order_items,
-    order.items,
-    order.order_items,
-    // Resource may nest relations under data
+    unwrapped?.orderItems,
     asRecord(dataLayer?.data)?.items,
     asRecord(dataLayer?.data)?.order_items,
   );
 
-  return { order, items };
+  const resolvedItems =
+    items.length > 0 ? items : collectItemsFromOrder(orderCandidate);
+
+  return { order, items: resolvedItems };
+}
+
+/** Find one order in a list payload (fallback when show route is missing). */
+export function findOrderDetailInList(
+  payload: unknown,
+  orderId: string | number,
+): OrderDetail | null {
+  const target = String(orderId);
+  const orders = extractOrders(payload);
+  const match = orders.find(
+    (order) =>
+      String(order.id) === target ||
+      String((order as { order_id?: number }).order_id ?? "") === target,
+  );
+  if (!match) return null;
+
+  const raw = match as unknown as Record<string, unknown>;
+  const items = collectItemsFromOrder(raw);
+  return { order: match, items };
 }
 
 export function getOrderDateValue(order: Partial<IOrder> | null | undefined) {
