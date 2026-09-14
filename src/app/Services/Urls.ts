@@ -1,5 +1,5 @@
 const LARAVEL_API_ORIGIN =
-  process.env.LARAVEL_API_ORIGIN ?? "http://laravel-next-ecomm.test";
+  process.env.LARAVEL_API_ORIGIN ?? "https://e-commerce-b4wa.onrender.com";
 
 const configuredApiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
 
