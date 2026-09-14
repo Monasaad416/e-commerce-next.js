@@ -62,12 +62,10 @@ export const API_URLS = {
       `${getApiBaseUrl()}/${lang}/wishlist`,
     ADD_TO_WISHLIST: (lang: string = "en") =>
       `${getApiBaseUrl()}/${lang}/wishlist/add`,
-    REMOVE_FROM_WISHLIST: (lang: string = "en", wishlistItemId: string) =>
+    REMOVE_FROM_WISHLIST: (lang: string = "en", wishlistItemId: string | number) =>
       `${getApiBaseUrl()}/${lang}/wishlist/remove-item/${wishlistItemId}`,
-    UPDATE_WISHLIST: (lang: string = "en", wishlistId: string | number) =>
-      `${getApiBaseUrl()}/${lang}/wishlist/update/${wishlistId}`,
-    CLEAR_WISHLIST: (lang: string = "en") =>
-      `${getApiBaseUrl()}/${lang}/wishlist/delete`,
+    REMOVE_BY_PRODUCT: (lang: string = "en", productId: string | number) =>
+      `${getApiBaseUrl()}/${lang}/wishlist/remove-product/${productId}`,
   },
   ORDER: {
     GET_ALL_ORDERS: (lang: string = "en") =>

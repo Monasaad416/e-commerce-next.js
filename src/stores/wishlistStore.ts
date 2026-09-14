@@ -252,55 +252,9 @@ export const useWishlistStore = create<
         }
       },
 
-      /* ───────────── Update (bulk qty) ───────────── */
+      /* ───────────── Update (local only — no Laravel update route) ───────────── */
       updateWishlist: async (newWishlist) => {
-        if (!getAuthToken()) {
-          set({ wishlist: newWishlist })
-          return
-        }
-
-        try {
-          const wishlistId = get().wishlistId
-          if (!wishlistId) {
-            await get().fetchWishlist()
-            return
-          }
-
-          const current = get().wishlist
-          const previousByItemId = new Map(
-            current
-              .filter((item) => item.cart_item_id)
-              .map((item) => [String(item.cart_item_id), item.qty])
-          )
-
-          for (const item of newWishlist) {
-            if (!item.cart_item_id) continue
-            const oldQty = previousByItemId.get(String(item.cart_item_id))
-            if (oldQty === item.qty) continue
-
-            const res = await fetch(
-              API_URLS.WISHLIST.UPDATE_WISHLIST(getLang(), wishlistId),
-              {
-                method: "PUT",
-                headers: getAuthHeaders(),
-                body: JSON.stringify({
-                  wishlist_item_id: Number(item.cart_item_id),
-                  qty: Number(item.qty),
-                }),
-              }
-            )
-
-            if (!res.ok) {
-              const text = await res.text().catch(() => "")
-              console.error("Update wishlist error:", text)
-              throw new Error("Update wishlist failed")
-            }
-          }
-
-          await get().fetchWishlist()
-        } catch (e) {
-          console.error("Update wishlist failed", e)
-        }
+        set({ wishlist: newWishlist })
       },
 
       /* ───────────── Remove ───────────── */
@@ -316,14 +270,19 @@ export const useWishlistStore = create<
         if (!getAuthToken()) return
 
         try {
-          const serverItemId = target?.cart_item_id ?? productId
-          const res = await fetch(
-            API_URLS.WISHLIST.REMOVE_FROM_WISHLIST(getLang(), String(serverItemId)),
-            {
-              method: "DELETE",
-              headers: getAuthHeaders(),
-            }
-          )
+          // Prefer row id: DELETE /wishlist/remove-item/{wishlist_item_id}
+          // Fallback: DELETE /wishlist/remove-product/{product_id}
+          const url = target?.cart_item_id
+            ? API_URLS.WISHLIST.REMOVE_FROM_WISHLIST(
+                getLang(),
+                target.cart_item_id,
+              )
+            : API_URLS.WISHLIST.REMOVE_BY_PRODUCT(getLang(), productId)
+
+          const res = await fetch(url, {
+            method: "DELETE",
+            headers: getAuthHeaders(),
+          })
 
           if (!res.ok) {
             const text = await res.text().catch(() => "")
@@ -344,7 +303,6 @@ export const useWishlistStore = create<
         if (!getAuthToken()) return
 
         try {
-          // Laravel: GET /wishlist (current user) — not GET /wishlist/{id}
           const res = await fetch(API_URLS.WISHLIST.GET_WISHLIST(getLang()), {
             headers: getAuthHeaders({ json: false }),
           })
@@ -370,21 +328,41 @@ export const useWishlistStore = create<
         }
       },
 
-      /* ───────────── Clear ───────────── */
+      /* ───────────── Clear (no bulk delete route — remove each item) ───────────── */
       clearWishlist: async () => {
+        const previous = get().wishlist
+
         if (!getAuthToken()) {
           set({ wishlist: [], wishlistId: null, ...emptyTotals })
           return
         }
 
         try {
-          await fetch(API_URLS.WISHLIST.CLEAR_WISHLIST(getLang()), {
-            method: "DELETE",
-            headers: getAuthHeaders(),
-          })
+          for (const item of previous) {
+            const url = item.cart_item_id
+              ? API_URLS.WISHLIST.REMOVE_FROM_WISHLIST(
+                  getLang(),
+                  item.cart_item_id,
+                )
+              : API_URLS.WISHLIST.REMOVE_BY_PRODUCT(getLang(), item.id)
+
+            const res = await fetch(url, {
+              method: "DELETE",
+              headers: getAuthHeaders(),
+            })
+
+            if (!res.ok) {
+              const text = await res.text().catch(() => "")
+              console.error("Clear wishlist item failed:", res.status, text)
+              await get().fetchWishlist()
+              throw new Error("Failed to clear wishlist")
+            }
+          }
+
           set({ wishlist: [], wishlistId: null, ...emptyTotals })
         } catch (e) {
           console.error("Clear wishlist error:", e)
+          throw e
         }
       },
     }),
