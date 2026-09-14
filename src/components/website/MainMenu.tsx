@@ -351,13 +351,7 @@ export function MainMenu() {
 
           <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
             <CartIcon />
-            <Link
-              href={`/${locale}/wishlist`}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/90 transition hover:scale-[1.03] hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shop_secondary"
-              aria-label={t("Menu.Wishlist")}
-            >
-              <WishlistIcon />
-            </Link>
+            <WishlistIcon />
           </div>
 
           {!_hasHydrated ? (

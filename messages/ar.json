@@ -68,7 +68,21 @@
   "Wishlist": {
     "title": "المفضلة",
     "viewAllProducts": "عرض جميع المنتجات",
-    "shopNow": "اشتري الآن"
+    "shopNow": "اشتري الآن",
+    "Empty": "قائمة المفضلة فارغة.",
+    "Item": "عنصر",
+    "Items": "عناصر",
+    "Clear": "مسح المفضلة",
+    "Cleared": "تم مسح المفضلة",
+    "ClearFailed": "فشل مسح المفضلة",
+    "Remove": "إزالة من المفضلة",
+    "Removed": "تمت الإزالة من المفضلة",
+    "RemoveFailed": "فشل الإزالة من المفضلة",
+    "Added": "تمت الإضافة إلى المفضلة",
+    "AddFailed": "فشل الإضافة إلى المفضلة",
+    "MovedToCart": "تمت الإضافة إلى السلة",
+    "MoveToCartFailed": "فشل الإضافة إلى السلة",
+    "Unavailable": "هذا المنتج لم يعد متاحًا"
   },
   "Cart": {
     "ShoppingCart": "سلة التسوق",
@@ -198,7 +212,7 @@
       "emailLabel": "البريد الإلكتروني",
       "emailValue": "support@example.com",
       "phoneLabel": "الهاتف",
-      "phoneValue": "+966 XX XXX XXXX",
+      "phoneValue": "+20 XX XXX XXXX",
       "hoursLabel": "ساعات العمل",
       "hoursValue": "الأحد–الخميس، ٩:٠٠–١٨:٠٠ (توقيت السعودية)"
     },

@@ -68,7 +68,21 @@
   "Wishlist": {
     "title": "Wishlist",
     "viewAllProducts": "View All Products",
-    "shopNow": "Shop Now"
+    "shopNow": "Shop Now",
+    "Empty": "Your wishlist is empty.",
+    "Item": "item",
+    "Items": "items",
+    "Clear": "Clear wishlist",
+    "Cleared": "Wishlist cleared",
+    "ClearFailed": "Failed to clear wishlist",
+    "Remove": "Remove from wishlist",
+    "Removed": "Removed from wishlist",
+    "RemoveFailed": "Failed to remove from wishlist",
+    "Added": "Added to wishlist",
+    "AddFailed": "Failed to add to wishlist",
+    "MovedToCart": "Added to cart",
+    "MoveToCartFailed": "Failed to add to cart",
+    "Unavailable": "This item is no longer available"
   },
   "Cart": {
     "ShoppingCart": "Shopping Cart",
@@ -198,7 +212,7 @@
       "emailLabel": "Email",
       "emailValue": "support@example.com",
       "phoneLabel": "Phone",
-      "phoneValue": "+966 XX XXX XXXX",
+      "phoneValue": "+20 XX XXX XXXX",
       "hoursLabel": "Business hours",
       "hoursValue": "Sun–Thu, 9:00–18:00 (AST)"
     },

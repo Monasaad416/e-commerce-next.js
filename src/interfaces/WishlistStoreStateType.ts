@@ -10,6 +10,7 @@ export interface IWishlistItem {
   subtotal?: number,
   tax?: number,
   discountPrice?: number,
+  slug?: string,
   images?: {
     featured_image: string,
     images: string[]
@@ -42,10 +43,15 @@ export interface IWishlistStoreState {
 export interface IWishlistStoreActions {
   setHasHydrated: (v: boolean) => void
 
-  addToWishlist: (item: IWishlistItem) => Promise<void>   
+  isInWishlist: (
+    productId: string,
+    selection?: IWishlistItem["selection"]
+  ) => boolean
+
+  addToWishlist: (item: IWishlistItem) => Promise<void>
 
   removeFromWishlist: (
-    cartItemId:string,
+    productId: string,
     selection?: object
   ) => Promise<void>
 
@@ -53,5 +59,5 @@ export interface IWishlistStoreActions {
 
   clearWishlist: () => Promise<void>
 
-  fetchWishlist: () => Promise<void>   
+  fetchWishlist: () => Promise<void>
 }

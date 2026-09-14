@@ -12,7 +12,7 @@ import getAuthHeaders from "@/lib/getAuthHeaders";
 import {
   asRecord,
   extractOrders,
-  formatOrderDate,
+  formatOrderDateFromOrder,
   statusClass,
 } from "@/lib/orderHelpers";
 import { useAuthStore } from "@/stores/authStore";
@@ -140,7 +140,7 @@ export default function Orders() {
                 <tr key={order.id} className="border-b hover:bg-gray-50">
                   <td className="p-4 font-medium text-gray-800">#{order.id}</td>
                   <td className="p-4 text-gray-600">
-                    {formatOrderDate(order.created_at, locale)}
+                    {formatOrderDateFromOrder(order, locale)}
                   </td>
                   <td className="p-4">
                     <span

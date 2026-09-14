@@ -1,64 +1,131 @@
 import { IOrder, IOrderItem, OrderDetail } from "@/interfaces/OrderType";
 
 export function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object"
+  return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+}
+
+/** Unwrap Laravel JsonResource double-nesting: { data: { data: order } }. */
+function unwrapData(value: unknown, depth = 0): Record<string, unknown> | null {
+  const obj = asRecord(value);
+  if (!obj || depth > 4) return obj;
+
+  if ("id" in obj) return obj;
+
+  const nested = asRecord(obj.data);
+  if (nested) return unwrapData(nested, depth + 1);
+
+  return obj;
+}
+
+function looksLikeOrder(value: unknown): value is Record<string, unknown> {
+  const obj = asRecord(value);
+  return Boolean(obj && ("id" in obj || "order_id" in obj));
+}
+
+function normalizeOrder(raw: Record<string, unknown>): IOrder {
+  const id = raw.id ?? raw.order_id;
+  return {
+    ...(raw as unknown as IOrder),
+    id: Number(id),
+  };
+}
+
+function extractItems(...candidates: unknown[]): IOrderItem[] {
+  for (const value of candidates) {
+    if (!Array.isArray(value)) continue;
+    return value
+      .map((item) => unwrapData(item) ?? asRecord(item))
+      .filter(Boolean)
+      .map((item) => item as unknown as IOrderItem);
+  }
+  return [];
 }
 
 export function extractOrders(payload: unknown): IOrder[] {
   const root = asRecord(payload);
   if (!root) return [];
 
-  const data = asRecord(root.data);
+  const data = unwrapData(root.data) ?? asRecord(root.data);
   const candidates = [
     root.orders,
     data?.orders,
-    data?.data,
+    asRecord(root.data)?.orders,
+    asRecord(root.data)?.data,
+    data && Array.isArray((data as { data?: unknown }).data)
+      ? (data as { data: unknown }).data
+      : null,
     Array.isArray(root.data) ? root.data : null,
     Array.isArray(payload) ? payload : null,
   ];
 
   for (const value of candidates) {
-    if (Array.isArray(value)) return value as IOrder[];
+    if (!Array.isArray(value)) continue;
+    return value
+      .map((row) => unwrapData(row) ?? asRecord(row))
+      .filter(looksLikeOrder)
+      .map((row) => normalizeOrder(row!));
   }
+
   return [];
 }
 
+/**
+ * Handles:
+ * - { success, data: OrderResource } → often { data: { data: order } }
+ * - { data: { order, items } }
+ * - { order, items }
+ */
 export function extractOrderDetail(payload: unknown): OrderDetail | null {
   const root = asRecord(payload);
   if (!root) return null;
 
-  const data = asRecord(root.data);
+  const dataLayer = asRecord(root.data);
+  const unwrapped = unwrapData(root.data) ?? unwrapData(root.order) ?? null;
+
   const orderCandidate =
     asRecord(root.order) ??
-    asRecord(data?.order) ??
-    (data && "id" in data ? data : null) ??
-    (root && "id" in root && !Array.isArray(root.data) ? root : null);
+    asRecord(dataLayer?.order) ??
+    (looksLikeOrder(unwrapped) ? unwrapped : null) ??
+    (looksLikeOrder(dataLayer) ? dataLayer : null) ??
+    (looksLikeOrder(root) ? root : null);
 
-  if (!orderCandidate || typeof orderCandidate.id === "undefined") {
-    return null;
-  }
+  if (!orderCandidate) return null;
 
-  const order = orderCandidate as unknown as IOrder;
+  const order = normalizeOrder(orderCandidate);
+  if (!Number.isFinite(order.id)) return null;
 
-  const itemCandidates = [
+  const items = extractItems(
     root.items,
-    data?.items,
-    data?.order_items,
+    dataLayer?.items,
+    dataLayer?.order_items,
+    unwrapped?.items,
+    unwrapped?.order_items,
     order.items,
     order.order_items,
-  ];
-
-  let items: IOrderItem[] = [];
-  for (const value of itemCandidates) {
-    if (Array.isArray(value)) {
-      items = value as IOrderItem[];
-      break;
-    }
-  }
+    // Resource may nest relations under data
+    asRecord(dataLayer?.data)?.items,
+    asRecord(dataLayer?.data)?.order_items,
+  );
 
   return { order, items };
+}
+
+export function getOrderDateValue(order: Partial<IOrder> | null | undefined) {
+  if (!order) return undefined;
+  const raw = order as Record<string, unknown>;
+  const candidates = [
+    order.created_at,
+    raw.date,
+    raw.order_date,
+    raw.createdAt,
+    order.updated_at,
+  ];
+  for (const value of candidates) {
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return undefined;
 }
 
 export function formatOrderDate(value: string | undefined, locale: string) {
@@ -70,6 +137,13 @@ export function formatOrderDate(value: string | undefined, locale: string) {
     month: "short",
     day: "numeric",
   }).format(date);
+}
+
+export function formatOrderDateFromOrder(
+  order: Partial<IOrder> | null | undefined,
+  locale: string,
+) {
+  return formatOrderDate(getOrderDateValue(order), locale);
 }
 
 export function statusClass(status: string) {
@@ -121,4 +195,9 @@ export function formatAddress(address: unknown): string {
     .map(String);
 
   return parts.length ? parts.join(", ") : "—";
+}
+
+export function resolveParamId(value: string | string[] | undefined) {
+  if (Array.isArray(value)) return value[0];
+  return value;
 }

@@ -14,8 +14,9 @@ import {
   asRecord,
   extractOrderDetail,
   formatAddress,
-  formatOrderDate,
+  formatOrderDateFromOrder,
   orderItemName,
+  resolveParamId,
   statusClass,
 } from "@/lib/orderHelpers";
 import { useAuthStore } from "@/stores/authStore";
@@ -24,7 +25,7 @@ export default function OrderDetailsPage() {
   const locale = useLocale();
   const t = useTranslations();
   const params = useParams<{ id: string }>();
-  const orderId = params?.id;
+  const orderId = resolveParamId(params?.id);
 
   const { token, _hasHydrated } = useAuthStore();
   const [detail, setDetail] = useState<OrderDetail | null>(null);
@@ -48,6 +49,7 @@ export default function OrderDetailsPage() {
       return;
     }
 
+    const id = orderId;
     let cancelled = false;
 
     async function loadOrder() {
@@ -55,13 +57,10 @@ export default function OrderDetailsPage() {
       setError(null);
 
       try {
-        const response = await fetch(
-          API_URLS.ORDER.GET_ORDER(locale, orderId),
-          {
-            method: "GET",
-            headers: getAuthHeaders(),
-          },
-        );
+        const response = await fetch(API_URLS.ORDER.GET_ORDER(locale, id), {
+          method: "GET",
+          headers: getAuthHeaders(),
+        });
 
         if (response.status === 401) {
           useAuthStore.getState().setToken(null);
@@ -73,24 +72,21 @@ export default function OrderDetailsPage() {
         }
 
         const payload = await response.json();
-
-        if (response.status === 404) {
-          throw new Error(t("Orders.NotFound"));
-        }
+        const payloadRecord = asRecord(payload);
+        const apiMessage =
+          typeof payloadRecord?.message === "string"
+            ? payloadRecord.message
+            : typeof payloadRecord?.error === "string"
+              ? payloadRecord.error
+              : null;
 
         if (!response.ok) {
-          const message =
-            asRecord(payload)?.message ??
-            asRecord(payload)?.error ??
-            t("Orders.LoadFailed");
-          throw new Error(
-            typeof message === "string" ? message : t("Orders.LoadFailed"),
-          );
+          throw new Error(apiMessage ?? t("Orders.NotFound"));
         }
 
         const parsed = extractOrderDetail(payload);
         if (!parsed) {
-          throw new Error(t("Orders.NotFound"));
+          throw new Error(apiMessage ?? t("Orders.NotFound"));
         }
 
         if (!cancelled) setDetail(parsed);
@@ -141,9 +137,9 @@ export default function OrderDetailsPage() {
             {t("Orders.OrderDetails")}
             {order ? ` #${order.id}` : ""}
           </h1>
-          {order?.created_at && (
+          {order && (
             <p className="text-gray-500">
-              {t("Orders.OrderDate")}: {formatOrderDate(order.created_at, locale)}
+              {t("Orders.OrderDate")}: {formatOrderDateFromOrder(order, locale)}
             </p>
           )}
         </div>

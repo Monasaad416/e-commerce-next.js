@@ -16,34 +16,43 @@ type BackendWishlistItem = {
   id: number
   product_id: number
   product_variant_id: number | null
+  name?: string
+  image?: string
   qty: number
   price: number
-  discount_price: number
-  subtotal: number
-  tax: number
-  total: number
-  is_available: boolean
-  availability_message: string | null
-  available_qty: number | null
+  discount_price?: number
+  subtotal?: number
+  tax?: number
+  total?: number
+  is_available?: boolean
+  availability_message?: string | null
+  available_qty?: number | null
+  product?: {
+    name?: string
+    image?: string
+  }
 }
 
 type BackendWishlistPayload = {
   id: number
-  user_id: number | null
-  subtotal: number
-  tax: number
-  discount: number
-  total: number
-  wishlist_items: BackendWishlistItem[]
+  user_id?: number | null
+  subtotal?: number
+  tax?: number
+  discount?: number
+  total?: number
+  wishlist_items?: BackendWishlistItem[]
+  items?: BackendWishlistItem[]
 }
 
 type BackendWishlistResponse = {
-  success: boolean
-  message: string
+  success?: boolean
+  message?: string
   data?: {
     wishlist?: BackendWishlistPayload
     id?: number
-  }
+    wishlist_items?: BackendWishlistItem[]
+    items?: BackendWishlistItem[]
+  } & Partial<BackendWishlistPayload>
 }
 
 /* ── Helpers ── */
@@ -62,6 +71,109 @@ const emptyTotals = {
   total: 0,
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+function extractWishlistPayload(
+  data: BackendWishlistResponse
+): BackendWishlistPayload | null {
+  const root = asRecord(data.data)
+  if (!root) return null
+
+  const nested = asRecord(root.wishlist)
+  if (nested && ("wishlist_items" in nested || "items" in nested || "id" in nested)) {
+    return nested as unknown as BackendWishlistPayload
+  }
+
+  if ("wishlist_items" in root || "items" in root || "id" in root) {
+    return root as unknown as BackendWishlistPayload
+  }
+
+  return null
+}
+
+function mapBackendItems(
+  items: BackendWishlistItem[],
+  existing: IWishlistItem[]
+): IWishlistItem[] {
+  return items.map((i) => {
+    const existingItem = existing.find(
+      (x) =>
+        x.id === String(i.product_id) &&
+        String(x.product_variant_id ?? "") === String(i.product_variant_id ?? "")
+    )
+    return {
+      id: String(i.product_id),
+      cart_item_id: String(i.id),
+      name:
+        existingItem?.name ||
+        i.name ||
+        i.product?.name ||
+        `#${i.product_id}`,
+      type:
+        existingItem?.type ?? (i.product_variant_id ? "variable" : "simple"),
+      qty: Number(i.qty ?? 1),
+      price: Number(i.price ?? 0),
+      discountPrice: Number(i.discount_price ?? 0),
+      subtotal: Number(i.subtotal ?? 0),
+      tax: Number(i.tax ?? 0),
+      total: Number(i.total ?? i.price ?? 0),
+      image: existingItem?.image || i.image || i.product?.image || "",
+      slug: existingItem?.slug,
+      selection: existingItem?.selection,
+      product_variant_id:
+        i.product_variant_id != null ? String(i.product_variant_id) : undefined,
+      is_available: i.is_available !== false,
+      availability_message: i.availability_message ?? null,
+      available_qty: i.available_qty != null ? Number(i.available_qty) : null,
+    }
+  })
+}
+
+function applyBackendWishlist(
+  payload: BackendWishlistPayload,
+  existing: IWishlistItem[]
+): Pick<
+  IWishlistStoreState,
+  "wishlistId" | "wishlist" | "subtotal" | "tax" | "discount" | "total"
+> {
+  const items = payload.wishlist_items ?? payload.items ?? []
+  return {
+    wishlistId: payload.id,
+    subtotal: Number(payload.subtotal ?? 0),
+    tax: Number(payload.tax ?? 0),
+    discount: Number(payload.discount ?? 0),
+    total: Number(payload.total ?? 0),
+    wishlist: mapBackendItems(items, existing),
+  }
+}
+
+function buildAddPayload(item: IWishlistItem) {
+  const variantId =
+    item.product_variant_id ??
+    (item.selection?.product_variant_id != null
+      ? String(item.selection.product_variant_id)
+      : null)
+  const qty = Number(item.qty) || 1
+  const price = Number(item.price) || 0
+  const discountPrice = Number(item.discountPrice ?? 0)
+
+  return {
+    product_id: Number(item.id),
+    product_variant_id: variantId ? Number(variantId) : null,
+    type: item.type,
+    qty,
+    price,
+    discount_price: discountPrice,
+    subtotal: Number(item.subtotal ?? price * qty),
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? price * qty),
+  }
+}
+
 export const useWishlistStore = create<
   IWishlistStoreState & IWishlistStoreActions
 >()(
@@ -74,13 +186,21 @@ export const useWishlistStore = create<
 
       setHasHydrated: (v: boolean) => set({ hasHydrated: v }),
 
+      isInWishlist: (productId, selection) => {
+        return get().wishlist.some(
+          (item) =>
+            item.id === String(productId) &&
+            sameSelection(item.selection, selection)
+        )
+      },
+
       /* ───────────── Add ───────────── */
       addToWishlist: async (item: IWishlistItem) => {
-        // Guest (local only)
         if (!getAuthToken()) {
           set((state) => {
             const existing = state.wishlist.find(
-              (i) => i.id === item.id && sameSelection(i.selection, item.selection)
+              (i) =>
+                i.id === item.id && sameSelection(i.selection, item.selection)
             )
             if (existing) return {}
             return { wishlist: [...state.wishlist, item] }
@@ -88,28 +208,12 @@ export const useWishlistStore = create<
           return
         }
 
-        // Logged user (Laravel)
         try {
-          const res = await fetch(
-            API_URLS.WISHLIST.ADD_TO_WISHLIST(getLang()),
-            {
-              method: "POST",
-              headers: getAuthHeaders(),
-              body: JSON.stringify({
-                product_id: item?.id,
-                product_variant_id: item.product_variant_id
-                  ? String(item.product_variant_id)
-                  : null,
-                type: item.type,
-                qty: item.qty,
-                price: item.price,
-                subtotal: item.subtotal,
-                tax: item.tax,
-                discount_price: item.discountPrice,
-                total: item.total,
-              }),
-            }
-          )
+          const res = await fetch(API_URLS.WISHLIST.ADD_TO_WISHLIST(getLang()), {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(buildAddPayload(item)),
+          })
 
           if (!res.ok) {
             const errorText = await res.text()
@@ -118,28 +222,37 @@ export const useWishlistStore = create<
           }
 
           const data = (await res.json()) as BackendWishlistResponse
+          const payload = extractWishlistPayload(data)
 
+          if (payload) {
+            set((state) => ({
+              ...applyBackendWishlist(payload, [...state.wishlist, item]),
+            }))
+            return
+          }
+
+          // Fallback: keep optimistic item, then refetch
           set((state) => {
             const newWishlistId =
               data.data?.id ?? data.data?.wishlist?.id ?? state.wishlistId
             const existing = state.wishlist.find(
-              (i) => i.id === item.id && sameSelection(i.selection, item.selection)
+              (i) =>
+                i.id === item.id && sameSelection(i.selection, item.selection)
             )
-            if (existing) {
-              return { wishlistId: newWishlistId }
-            }
+            if (existing) return { wishlistId: newWishlistId }
             return {
               wishlistId: newWishlistId,
               wishlist: [...state.wishlist, item],
             }
           })
+          await get().fetchWishlist()
         } catch (error) {
           console.error("Add to wishlist error:", error)
           throw error
         }
       },
 
-      /* ───────────── Update (bulk) ───────────── */
+      /* ───────────── Update (bulk qty) ───────────── */
       updateWishlist: async (newWishlist) => {
         if (!getAuthToken()) {
           set({ wishlist: newWishlist })
@@ -169,10 +282,7 @@ export const useWishlistStore = create<
               API_URLS.WISHLIST.UPDATE_WISHLIST(getLang(), wishlistId),
               {
                 method: "PUT",
-                headers: {
-                  Accept: "application/json",
-                  ...getAuthHeaders(),
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   wishlist_item_id: Number(item.cart_item_id),
                   qty: Number(item.qty),
@@ -180,20 +290,10 @@ export const useWishlistStore = create<
               }
             )
 
-            const raw = await res.text()
-            let payload: unknown = raw
-            try {
-              payload = JSON.parse(raw)
-            } catch {}
             if (!res.ok) {
-              console.error("Update wishlist error payload:", payload)
-              const errMsg =
-                typeof payload === "string"
-                  ? payload
-                  : (payload as { error?: string; message?: string })?.error ||
-                    (payload as { message?: string })?.message ||
-                    "Update wishlist failed"
-              throw new Error(errMsg)
+              const text = await res.text().catch(() => "")
+              console.error("Update wishlist error:", text)
+              throw new Error("Update wishlist failed")
             }
           }
 
@@ -204,37 +304,38 @@ export const useWishlistStore = create<
       },
 
       /* ───────────── Remove ───────────── */
-      removeFromWishlist: async (wishlistItemId, selection) => {
-        if (!getAuthToken()) {
-          set((state) => ({
-            wishlist: state.wishlist.filter(
-              (item) =>
-                !(
-                  item.id === wishlistItemId &&
-                  sameSelection(item.selection, selection as IWishlistItem["selection"])
-                )
-            ),
-          }))
-          return
-        }
+      removeFromWishlist: async (productId, selection) => {
+        const matches = (item: IWishlistItem) =>
+          item.id === String(productId) &&
+          sameSelection(item.selection, selection as IWishlistItem["selection"])
+
+        const previous = get().wishlist
+        const target = previous.find(matches)
+        set({ wishlist: previous.filter((item) => !matches(item)) })
+
+        if (!getAuthToken()) return
 
         try {
-          const target = get().wishlist.find(
-            (item) =>
-              item.id === wishlistItemId &&
-              sameSelection(item.selection, selection as IWishlistItem["selection"])
-          )
-          const serverItemId = target?.cart_item_id ?? wishlistItemId
-          await fetch(
-            API_URLS.WISHLIST.REMOVE_FROM_WISHLIST(getLang(), serverItemId),
+          const serverItemId = target?.cart_item_id ?? productId
+          const res = await fetch(
+            API_URLS.WISHLIST.REMOVE_FROM_WISHLIST(getLang(), String(serverItemId)),
             {
               method: "DELETE",
               headers: getAuthHeaders(),
             }
           )
+
+          if (!res.ok) {
+            const text = await res.text().catch(() => "")
+            console.error("Remove from wishlist failed:", res.status, text)
+            set({ wishlist: previous })
+            return
+          }
+
           await get().fetchWishlist()
         } catch (e) {
           console.error("Remove from wishlist error:", e)
+          set({ wishlist: previous })
         }
       },
 
@@ -243,60 +344,27 @@ export const useWishlistStore = create<
         if (!getAuthToken()) return
 
         try {
-          const wishlistId = get().wishlistId
-          const url = wishlistId
-            ? `${API_URLS.WISHLIST.GET_WISHLIST(getLang())}?wishlist_id=${wishlistId}`
-            : API_URLS.WISHLIST.GET_WISHLIST(getLang())
+          // Laravel: GET /wishlist (current user) — not GET /wishlist/{id}
+          const res = await fetch(API_URLS.WISHLIST.GET_WISHLIST(getLang()), {
+            headers: getAuthHeaders({ json: false }),
+          })
 
-          const res = await fetch(url, { headers: getAuthHeaders() })
-          if (!res.ok) throw new Error("Failed to fetch wishlist")
+          if (!res.ok) {
+            if (res.status === 404) {
+              set({ wishlist: [], wishlistId: null, ...emptyTotals })
+            }
+            throw new Error("Failed to fetch wishlist")
+          }
 
           const data = (await res.json()) as BackendWishlistResponse
-          const payload = data?.data?.wishlist
+          const payload = extractWishlistPayload(data)
+
           if (!payload) {
             set({ wishlist: [], wishlistId: null, ...emptyTotals })
             return
           }
 
-          set((state) => ({
-            wishlistId: payload.id,
-            subtotal: Number(payload.subtotal ?? 0),
-            tax: Number(payload.tax ?? 0),
-            discount: Number(payload.discount ?? 0),
-            total: Number(payload.total ?? 0),
-            wishlist: (payload.wishlist_items ?? []).map((i) => {
-              const existing = state.wishlist.find(
-                (x) =>
-                  x.id === String(i.product_id) &&
-                  String(x.product_variant_id ?? "") ===
-                    String(i.product_variant_id ?? "")
-              )
-              return {
-                id: String(i.product_id),
-                cart_item_id: String(i.id),
-                name: existing?.name ?? `#${i.product_id}`,
-                type:
-                  existing?.type ??
-                  (i.product_variant_id ? "variable" : "simple"),
-                qty: Number(i.qty),
-                price: Number(i.price),
-                discountPrice: Number(i.discount_price ?? 0),
-                subtotal: Number(i.subtotal ?? 0),
-                tax: Number(i.tax ?? 0),
-                total: Number(i.total ?? 0),
-                image: existing?.image ?? "",
-                selection: existing?.selection,
-                product_variant_id:
-                  i.product_variant_id != null
-                    ? String(i.product_variant_id)
-                    : undefined,
-                is_available: Boolean(i.is_available),
-                availability_message: i.availability_message,
-                available_qty:
-                  i.available_qty != null ? Number(i.available_qty) : null,
-              }
-            }),
-          }))
+          set((state) => applyBackendWishlist(payload, state.wishlist))
         } catch (e) {
           console.error("Fetch wishlist failed", e)
         }
@@ -323,14 +391,15 @@ export const useWishlistStore = create<
     {
       name: "wishlist-storage",
       storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? localStorage : {
-          getItem: () => null,
-          setItem: () => {},
-          removeItem: () => {},
-        }
+        typeof window !== "undefined"
+          ? localStorage
+          : {
+              getItem: () => null,
+              setItem: () => {},
+              removeItem: () => {},
+            }
       ),
       onRehydrateStorage: () => (state) => {
-        // Defer so subscribed components aren't updated before mount (React 19).
         queueMicrotask(() => {
           state?.setHasHydrated(true)
         })

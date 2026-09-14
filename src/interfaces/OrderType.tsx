@@ -12,6 +12,9 @@ export interface IOrder {
   notes?: string;
   created_at?: string;
   updated_at?: string;
+  date?: string;
+  order_date?: string;
+  createdAt?: string;
   items?: IOrderItem[];
   order_items?: IOrderItem[];
 }
