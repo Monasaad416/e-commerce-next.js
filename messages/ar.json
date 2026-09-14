@@ -32,7 +32,20 @@
     "Action": "الإجراء",
     "Date": "التاريخ",
     "Status": "الحالة",
-    "Total": "الإجمالي"
+    "Total": "الإجمالي",
+    "View": "عرض",
+    "BackToOrders": "العودة للطلبات",
+    "PaymentStatus": "حالة الدفع",
+    "ShippingStatus": "حالة الشحن",
+    "ShippingAddress": "عنوان الشحن",
+    "Subtotal": "المجموع الفرعي",
+    "Discount": "الخصم",
+    "ShippingFee": "رسوم الشحن",
+    "Notes": "ملاحظات",
+    "Qty": "الكمية",
+    "NoOrdersFound": "لا توجد طلبات",
+    "NotFound": "الطلب غير موجود",
+    "LoadFailed": "فشل تحميل الطلبات"
   },
   "Home": {
     "title": "الرئيسية",

@@ -32,7 +32,20 @@
     "Action": "Action",
     "Date": "Date",
     "Status": "Status",
-    "Total": "Total"
+    "Total": "Total",
+    "View": "View",
+    "BackToOrders": "Back to orders",
+    "PaymentStatus": "Payment status",
+    "ShippingStatus": "Shipping status",
+    "ShippingAddress": "Shipping address",
+    "Subtotal": "Subtotal",
+    "Discount": "Discount",
+    "ShippingFee": "Shipping fee",
+    "Notes": "Notes",
+    "Qty": "Qty",
+    "NoOrdersFound": "No orders found",
+    "NotFound": "Order not found",
+    "LoadFailed": "Failed to load orders"
   },
   "Home": {
     "title": "Home",

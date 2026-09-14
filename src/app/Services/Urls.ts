@@ -72,6 +72,8 @@ export const API_URLS = {
   ORDER: {
     GET_ALL_ORDERS: (lang: string = "en") =>
       `${getApiBaseUrl()}/${lang}/orders`,
+    GET_ORDER: (lang: string = "en", orderId: string | number) =>
+      `${getApiBaseUrl()}/${lang}/orders/${orderId}`,
     CREATE_ORDER: (lang: string = "en") =>
       `${getApiBaseUrl()}/${lang}/create-order`,
     CHECKOUT: (lang: string = "en", orderId: string | number) =>

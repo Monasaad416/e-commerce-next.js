@@ -6,67 +6,16 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { API_URLS } from "@/app/Services/Urls";
 import { AppLoader } from "@/components/customLoader/CustomLoader";
-import { IOrder, OrdersResponse } from "@/interfaces/OrderType";
+import { IOrder } from "@/interfaces/OrderType";
 import { formatMoney } from "@/lib/formatMoney";
 import getAuthHeaders from "@/lib/getAuthHeaders";
+import {
+  asRecord,
+  extractOrders,
+  formatOrderDate,
+  statusClass,
+} from "@/lib/orderHelpers";
 import { useAuthStore } from "@/stores/authStore";
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function extractOrders(payload: unknown): IOrder[] {
-  const root = asRecord(payload);
-  if (!root) return [];
-
-  const data = asRecord(root.data);
-  const candidates = [
-    root.orders,
-    data?.orders,
-    data?.data,
-    Array.isArray(root.data) ? root.data : null,
-    Array.isArray(payload) ? payload : null,
-  ];
-
-  for (const value of candidates) {
-    if (Array.isArray(value)) return value as IOrder[];
-  }
-  return [];
-}
-
-function formatOrderDate(value: string | undefined, locale: string) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(date);
-}
-
-function statusClass(status: string) {
-  const key = status.trim().toLowerCase();
-  if (
-    key === "delivered" ||
-    key === "completed" ||
-    key === "paid" ||
-    key === "success"
-  ) {
-    return "bg-green-100 text-green-700";
-  }
-  if (
-    key === "processing" ||
-    key === "pending" ||
-    key === "shipped" ||
-    key === "unpaid"
-  ) {
-    return "bg-yellow-100 text-yellow-700";
-  }
-  return "bg-red-100 text-red-700";
-}
 
 export default function Orders() {
   const locale = useLocale();
@@ -108,15 +57,15 @@ export default function Orders() {
           return;
         }
 
-        const payload = (await response.json()) as OrdersResponse | unknown;
+        const payload = await response.json();
 
         if (!response.ok) {
           const message =
             asRecord(payload)?.message ??
             asRecord(payload)?.error ??
-            t("Auth.authentication_failed");
+            t("Orders.LoadFailed");
           throw new Error(
-            typeof message === "string" ? message : "Failed to load orders",
+            typeof message === "string" ? message : t("Orders.LoadFailed"),
           );
         }
 
@@ -127,7 +76,7 @@ export default function Orders() {
         if (!cancelled) {
           setOrders([]);
           setError(
-            err instanceof Error ? err.message : "Failed to load orders",
+            err instanceof Error ? err.message : t("Orders.LoadFailed"),
           );
         }
       } finally {
@@ -202,9 +151,12 @@ export default function Orders() {
                   </td>
                   <td className="p-4 font-medium">{formatMoney(order.total)}</td>
                   <td className="p-4">
-                    <span className="text-shop_secondary/70 text-sm">
-                      {t("Orders.OrderDetails")}
-                    </span>
+                    <Link
+                      href={`/${locale}/orders/${order.id}`}
+                      className="text-shop_secondary hover:underline"
+                    >
+                      {t("Orders.View")}
+                    </Link>
                   </td>
                 </tr>
               );
@@ -214,7 +166,9 @@ export default function Orders() {
       </div>
 
       {!error && orders.length === 0 && (
-        <div className="text-center py-10 text-gray-500">No orders found</div>
+        <div className="text-center py-10 text-gray-500">
+          {t("Orders.NoOrdersFound")}
+        </div>
       )}
     </div>
   );
