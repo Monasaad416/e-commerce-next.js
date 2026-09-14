@@ -5,67 +5,86 @@ const LARAVEL_API_ORIGIN = (
 ).replace(/\/$/, "");
 
 /**
- * Browser: same-origin `/api/v1` (rewritten to Laravel in next.config).
- * Server (RSC/ISR): call Laravel origin directly.
+ * Resolve API base at call time (not module load).
+ * Browser → same-origin `/api/v1` (Vercel rewrite → Laravel, no CORS).
+ * Server → Laravel origin directly.
  */
-const API_BASE_URL =
-  typeof window !== "undefined"
-    ? `${window.location.origin}/api/v1`
-    : (process.env.NEXT_PUBLIC_API_BASE_URL ?? `${LARAVEL_API_ORIGIN}/api/v1`);
+function getApiBaseUrl() {
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/api/v1`;
+  }
+  return (
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+    `${LARAVEL_API_ORIGIN}/api/v1`
+  );
+}
 
-const STORAGE_BASE_URL =
-  process.env.NEXT_PUBLIC_STORAGE_BASE_URL ?? `${LARAVEL_API_ORIGIN}/storage`;
+function getStorageBaseUrl() {
+  return (
+    process.env.NEXT_PUBLIC_STORAGE_BASE_URL?.replace(/\/$/, "") ??
+    `${LARAVEL_API_ORIGIN}/storage`
+  );
+}
 
 export const API_URLS = {
   AUTHENTECATEION: {
-    LOGIN: (lang: string = "en") => `${API_BASE_URL}/${lang}/login`,
-    LOGOUT: (lang: string = "en") => `${API_BASE_URL}/${lang}/logout`,
-    REGISTER: (lang: string = "en") => `${API_BASE_URL}/${lang}/register`,
+    LOGIN: (lang: string = "en") => `${getApiBaseUrl()}/${lang}/login`,
+    LOGOUT: (lang: string = "en") => `${getApiBaseUrl()}/${lang}/logout`,
+    REGISTER: (lang: string = "en") => `${getApiBaseUrl()}/${lang}/register`,
   },
   CATEGORIES: {
     GET_CATEGORIES: (lang: string = "en") =>
-      `${API_BASE_URL}/${lang}/categories`,
+      `${getApiBaseUrl()}/${lang}/categories`,
   },
   PRODUCTS: {
-    GET_PRODUCTS: (lang: string = "en") => `${API_BASE_URL}/${lang}/products`,
+    GET_PRODUCTS: (lang: string = "en") =>
+      `${getApiBaseUrl()}/${lang}/products`,
     GET_PRODUCT: (lang: string = "en", slug: string) =>
-      `${API_BASE_URL}/${lang}/products/${slug}`,
+      `${getApiBaseUrl()}/${lang}/products/${slug}`,
   },
   PAGE_CONTENT: {
     GET_PAGE_CONTENT: (lang: string = "ar", page: string) =>
-      `${API_BASE_URL}/${lang}/page-content/${page}`,
+      `${getApiBaseUrl()}/${lang}/page-content/${page}`,
   },
   CART: {
-    GET_CART: (lang: string = "en") => `${API_BASE_URL}/${lang}/cart`,
-    ADD_TO_CART: (lang: string = "en") => `${API_BASE_URL}/${lang}/cart/add`,
+    GET_CART: (lang: string = "en") => `${getApiBaseUrl()}/${lang}/cart`,
+    ADD_TO_CART: (lang: string = "en") =>
+      `${getApiBaseUrl()}/${lang}/cart/add`,
     REMOVE_FROM_CART: (lang: string = "en", cartItemId: string) =>
-      `${API_BASE_URL}/${lang}/cart/remove-item/${cartItemId}`,
+      `${getApiBaseUrl()}/${lang}/cart/remove-item/${cartItemId}`,
     UPDATE_CART: (lang: string = "en", cartId: string | number) =>
-      `${API_BASE_URL}/${lang}/cart/update/${cartId}`,
-    CLEAR_CART: (lang: string = "en") => `${API_BASE_URL}/${lang}/cart/delete`,
+      `${getApiBaseUrl()}/${lang}/cart/update/${cartId}`,
+    CLEAR_CART: (lang: string = "en") =>
+      `${getApiBaseUrl()}/${lang}/cart/delete`,
   },
   WISHLIST: {
-    GET_WISHLIST: (lang: string = "en") => `${API_BASE_URL}/${lang}/wishlist`,
+    GET_WISHLIST: (lang: string = "en") =>
+      `${getApiBaseUrl()}/${lang}/wishlist`,
     ADD_TO_WISHLIST: (lang: string = "en") =>
-      `${API_BASE_URL}/${lang}/wishlist/add`,
+      `${getApiBaseUrl()}/${lang}/wishlist/add`,
     REMOVE_FROM_WISHLIST: (lang: string = "en", wishlistItemId: string) =>
-      `${API_BASE_URL}/${lang}/wishlist/remove-item/${wishlistItemId}`,
+      `${getApiBaseUrl()}/${lang}/wishlist/remove-item/${wishlistItemId}`,
     UPDATE_WISHLIST: (lang: string = "en", wishlistId: string | number) =>
-      `${API_BASE_URL}/${lang}/wishlist/update/${wishlistId}`,
+      `${getApiBaseUrl()}/${lang}/wishlist/update/${wishlistId}`,
     CLEAR_WISHLIST: (lang: string = "en") =>
-      `${API_BASE_URL}/${lang}/wishlist/delete`,
+      `${getApiBaseUrl()}/${lang}/wishlist/delete`,
   },
   ORDER: {
-    GET_ALL_ORDERS: (lang: string = "en") => `${API_BASE_URL}/${lang}/orders`,
+    GET_ALL_ORDERS: (lang: string = "en") =>
+      `${getApiBaseUrl()}/${lang}/orders`,
     CREATE_ORDER: (lang: string = "en") =>
-      `${API_BASE_URL}/${lang}/create-order`,
+      `${getApiBaseUrl()}/${lang}/create-order`,
     CHECKOUT: (lang: string = "en", orderId: string | number) =>
-      `${API_BASE_URL}/${lang}/orders/${orderId}/checkout`,
+      `${getApiBaseUrl()}/${lang}/orders/${orderId}/checkout`,
     UPDATE_ORDER: (lang: string = "en", orderId: string) =>
-      `${API_BASE_URL}/${lang}/orders/${orderId}`,
+      `${getApiBaseUrl()}/${lang}/orders/${orderId}`,
     UPDATE_PAYMENT_STATUS: (lang: string = "en", orderId: string) =>
-      `${API_BASE_URL}/${lang}/orders/${orderId}/update-payment-status`,
+      `${getApiBaseUrl()}/${lang}/orders/${orderId}/update-payment-status`,
   },
-  BASE_URL: API_BASE_URL,
-  STORAGE_BASE_URL: STORAGE_BASE_URL,
+  get BASE_URL() {
+    return getApiBaseUrl();
+  },
+  get STORAGE_BASE_URL() {
+    return getStorageBaseUrl();
+  },
 };
