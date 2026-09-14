@@ -1,18 +1,18 @@
 const LARAVEL_API_ORIGIN =
-  process.env.LARAVEL_API_ORIGIN ?? "https://e-commerce-b4wa.onrender.com";
+  process.env.LARAVEL_API_ORIGIN ??
+  "https://e-commerce-b4wa.onrender.com";
 
-const configuredApiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-// Browser uses same-origin absolute URLs so `new URL(...)` and fetch both work;
-// Next.js rewrites /api/v1/* to Laravel (avoids CORS).
 const API_BASE_URL =
-  typeof window !== "undefined"
-    ? `${window.location.origin}/api/v1`
-    : (configuredApiBase ?? `${LARAVEL_API_ORIGIN}/api/v1`);
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  `${LARAVEL_API_ORIGIN}/api/v1`;
 
 const STORAGE_BASE_URL =
   process.env.NEXT_PUBLIC_STORAGE_BASE_URL ??
   `${LARAVEL_API_ORIGIN}/storage`;
+
+
+
+
 
 export const API_URLS = {
     AUTHENTECATEION: {
