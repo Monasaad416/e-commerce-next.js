@@ -1,6 +1,8 @@
 import type { IProduct } from "@/interfaces/productType";
-import getBackgroundColor from "@/lib/getBackgroundColor";
-import { getLocalizedValue } from "@/lib/i18n/getLocalizedValue";
+import getBackgroundColor, {
+  getCanonicalColorKey,
+  getColorDisplayLabel,
+} from "@/lib/getBackgroundColor";
 
 const COLOR_ATTR_NAMES = new Set(["color", "colour", "اللون"]);
 
@@ -10,7 +12,7 @@ export function isColorAttributeName(attributeName: unknown): boolean {
     typeof attributeName === "string"
       ? [attributeName]
       : Object.values(attributeName as Record<string, unknown>).map((v) =>
-          v != null ? String(v) : ""
+          v != null ? String(v) : "",
         );
   return names.some((n) => COLOR_ATTR_NAMES.has(n.toLowerCase()));
 }
@@ -25,7 +27,9 @@ export function getDistinctVariantColors(product: IProduct): string[] {
   for (const variant of product.variants) {
     for (const av of variant.attribute_values ?? []) {
       if (!isColorAttributeName(av.attribute_name)) continue;
-      const css = getBackgroundColor(av.value as Parameters<typeof getBackgroundColor>[0]);
+      const css = getBackgroundColor(
+        av.value as Parameters<typeof getBackgroundColor>[0],
+      );
       if (seen.has(css)) continue;
       seen.add(css);
       out.push(css);
@@ -35,43 +39,74 @@ export function getDistinctVariantColors(product: IProduct): string[] {
   return out;
 }
 
-/** Normalized color labels for shop filters (localized text / hex). */
-export function getProductColorLabels(product: IProduct, lang: string): string[] {
+export type ProductColorOption = {
+  /** Stable key for filtering (EN/AR aliases collapse here). */
+  key: string;
+  /** Localized label for UI. */
+  label: string;
+  /** CSS swatch color. */
+  css: string;
+};
+
+/** Color options for a single product (for filters + matching). */
+export function getProductColorOptions(
+  product: IProduct,
+  lang: string,
+): ProductColorOption[] {
   if (product.type !== "variable" || !product.variants?.length) return [];
 
-  const labels: string[] = [];
+  const byKey = new Map<string, ProductColorOption>();
+
   for (const variant of product.variants) {
     for (const av of variant.attribute_values ?? []) {
       if (!isColorAttributeName(av.attribute_name)) continue;
-      const label = getLocalizedValue(av.value, lang).trim().toLowerCase();
-      if (label) labels.push(label);
+      const value = av.value as Parameters<typeof getBackgroundColor>[0];
+      const key = getCanonicalColorKey(value);
+      if (!key || byKey.has(key)) continue;
+      byKey.set(key, {
+        key,
+        label: getColorDisplayLabel(value, lang) || key,
+        css: getBackgroundColor(value),
+      });
     }
   }
-  return labels;
+
+  return Array.from(byKey.values());
+}
+
+/** @deprecated use getProductColorOptions — kept for callers expecting string labels */
+export function getProductColorLabels(product: IProduct, lang: string): string[] {
+  return getProductColorOptions(product, lang).map((o) => o.key);
+}
+
+export function getDistinctProductColorOptions(
+  products: IProduct[],
+  lang: string,
+): ProductColorOption[] {
+  const byKey = new Map<string, ProductColorOption>();
+  for (const product of products) {
+    for (const option of getProductColorOptions(product, lang)) {
+      if (!byKey.has(option.key)) byKey.set(option.key, option);
+    }
+  }
+  return Array.from(byKey.values());
 }
 
 export function getDistinctProductColorLabels(
   products: IProduct[],
-  lang: string
+  lang: string,
 ): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const product of products) {
-    for (const label of getProductColorLabels(product, lang)) {
-      if (seen.has(label)) continue;
-      seen.add(label);
-      out.push(label);
-    }
-  }
-  return out;
+  return getDistinctProductColorOptions(products, lang).map((o) => o.key);
 }
 
 export function productMatchesColorFilter(
   product: IProduct,
-  colorLabel: string,
-  lang: string
+  colorKey: string,
+  lang: string,
 ): boolean {
-  const target = colorLabel.trim().toLowerCase();
+  const target = colorKey.trim().toLowerCase();
   if (!target) return true;
-  return getProductColorLabels(product, lang).includes(target);
+  return getProductColorOptions(product, lang).some(
+    (o) => o.key === target || o.label.toLowerCase() === target,
+  );
 }

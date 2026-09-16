@@ -83,26 +83,32 @@ export default function ProductClient({
   }, [product, selectedAttributes, groupedAttributes]);
 
   // ---------------- Images ----------------
+  const imageKey = product?.slug || String(product?.id ?? "");
   const allImages = useMemo(() => {
     if (!product) return [];
     if (product.type === "simple") {
-      return (
+      const imgs =
         product.images?.map((img: IProductImage) =>
-          resolveImageUrl(img.image_path ?? img.url ?? "")
-        ) || []
-      );
+          resolveImageUrl(img.image_path ?? img.url ?? "", { key: imageKey }),
+        ) || [];
+      return imgs.length ? imgs : [resolveImageUrl(null, { key: imageKey })];
     }
     if (product.type === "variable") {
       const v = matchedVariant ?? product.variants[0];
-      const featured = v?.featured_image ? [resolveImageUrl(v.featured_image)] : [];
+      const featured = v?.featured_image
+        ? [resolveImageUrl(v.featured_image, { key: imageKey })]
+        : [];
       const others =
         v?.images?.map((img: IProductImage) =>
-          resolveImageUrl(img.url ?? img.image_path ?? "")
+          resolveImageUrl(img.url ?? img.image_path ?? "", { key: imageKey }),
         ) || [];
-      return Array.from(new Set([...featured, ...others]));
+      const merged = Array.from(new Set([...featured, ...others]));
+      return merged.length
+        ? merged
+        : [resolveImageUrl(null, { key: imageKey })];
     }
-    return [];
-  }, [product, matchedVariant]);
+    return [resolveImageUrl(null, { key: imageKey })];
+  }, [product, matchedVariant, imageKey]);
 
   const allAttributesSelected = useMemo(() => {
     if (!groupedAttributes) return false;
@@ -148,7 +154,10 @@ export default function ProductClient({
         matchedVariant.featured_image ??
         matchedVariant.images?.[0]?.url ??
         null;
-      if (imagePath) result.image = resolveImageUrl(imagePath);
+      if (imagePath)
+        result.image = resolveImageUrl(imagePath, {
+          key: product?.slug || String(product?.id ?? ""),
+        });
     }
 
     return result;

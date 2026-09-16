@@ -34,18 +34,26 @@ export default function ProductCard({ product }: { product: IProduct }) {
   let price: number | undefined;
   let discountPrice: number | undefined;
 
-  if (product.type === "simple" && product.images?.length > 0) {
-    featuredImage = resolveImageUrl(
-      product.images?.find((img) => img?.is_featured)?.image_path
-    );
+  const imageKey = product.slug || String(product.id);
+
+  if (product.type === "simple") {
+    const path =
+      product.images?.find((img) => img?.is_featured)?.image_path ??
+      product.images?.[0]?.image_path ??
+      product.images?.[0]?.url;
+    featuredImage = resolveImageUrl(path, { key: imageKey });
     price = product?.selling_price;
     discountPrice = product?.discount_price;
-  }
-
-  if (product.type === "variable") {
-    featuredImage = resolveImageUrl(product.variants?.[0]?.featured_image);
+  } else if (product.type === "variable") {
+    const path =
+      product.variants?.[0]?.featured_image ??
+      product.images?.find((img) => img?.is_featured)?.image_path ??
+      product.images?.[0]?.image_path;
+    featuredImage = resolveImageUrl(path, { key: imageKey });
     price = product.variants?.[0]?.selling_price;
     discountPrice = product.variants?.[0]?.discount_price;
+  } else {
+    featuredImage = resolveImageUrl(null, { key: imageKey });
   }
 
   const cardSelection =

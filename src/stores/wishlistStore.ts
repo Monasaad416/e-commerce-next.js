@@ -174,6 +174,31 @@ function buildAddPayload(item: IWishlistItem) {
   }
 }
 
+function addLocalItem(
+  set: (
+    partial:
+      | Partial<IWishlistStoreState>
+      | ((state: IWishlistStoreState) => Partial<IWishlistStoreState>)
+  ) => void,
+  item: IWishlistItem
+) {
+  set((state) => {
+    const existing = state.wishlist.find(
+      (i) => i.id === item.id && sameSelection(i.selection, item.selection)
+    )
+    if (existing) return {}
+    return { wishlist: [...state.wishlist, item] }
+  })
+}
+
+function isRouteMissing(status: number, body: string) {
+  return (
+    status === 404 ||
+    /could not be found/i.test(body) ||
+    /route .* not found/i.test(body)
+  )
+}
+
 export const useWishlistStore = create<
   IWishlistStoreState & IWishlistStoreActions
 >()(
@@ -197,14 +222,7 @@ export const useWishlistStore = create<
       /* ───────────── Add ───────────── */
       addToWishlist: async (item: IWishlistItem) => {
         if (!getAuthToken()) {
-          set((state) => {
-            const existing = state.wishlist.find(
-              (i) =>
-                i.id === item.id && sameSelection(i.selection, item.selection)
-            )
-            if (existing) return {}
-            return { wishlist: [...state.wishlist, item] }
-          })
+          addLocalItem(set, item)
           return
         }
 
@@ -215,10 +233,16 @@ export const useWishlistStore = create<
             body: JSON.stringify(buildAddPayload(item)),
           })
 
+          const errorText = res.ok ? "" : await res.text().catch(() => "")
+
+          // Laravel wishlist routes not on Render yet → local fallback
+          if (!res.ok && isRouteMissing(res.status, errorText)) {
+            addLocalItem(set, item)
+            return
+          }
+
           if (!res.ok) {
-            const errorText = await res.text()
-            console.error("Wishlist add error:", errorText)
-            throw new Error("Failed to add to wishlist")
+            throw new Error(errorText.trim() || "Failed to add to wishlist")
           }
 
           const data = (await res.json()) as BackendWishlistResponse
@@ -231,7 +255,6 @@ export const useWishlistStore = create<
             return
           }
 
-          // Fallback: keep optimistic item, then refetch
           set((state) => {
             const newWishlistId =
               data.data?.id ?? data.data?.wishlist?.id ?? state.wishlistId
@@ -247,12 +270,12 @@ export const useWishlistStore = create<
           })
           await get().fetchWishlist()
         } catch (error) {
-          console.error("Add to wishlist error:", error)
-          throw error
+          addLocalItem(set, item)
+          console.warn("Wishlist API unavailable; saved locally.", error)
         }
       },
 
-      /* ───────────── Update (local only — no Laravel update route) ───────────── */
+      /* ───────────── Update (local only) ───────────── */
       updateWishlist: async (newWishlist) => {
         set({ wishlist: newWishlist })
       },
@@ -270,8 +293,6 @@ export const useWishlistStore = create<
         if (!getAuthToken()) return
 
         try {
-          // Prefer row id: DELETE /wishlist/remove-item/{wishlist_item_id}
-          // Fallback: DELETE /wishlist/remove-product/{product_id}
           const url = target?.cart_item_id
             ? API_URLS.WISHLIST.REMOVE_FROM_WISHLIST(
                 getLang(),
@@ -284,8 +305,10 @@ export const useWishlistStore = create<
             headers: getAuthHeaders(),
           })
 
+          const text = res.ok ? "" : await res.text().catch(() => "")
+          if (!res.ok && isRouteMissing(res.status, text)) return
+
           if (!res.ok) {
-            const text = await res.text().catch(() => "")
             console.error("Remove from wishlist failed:", res.status, text)
             set({ wishlist: previous })
             return
@@ -293,8 +316,7 @@ export const useWishlistStore = create<
 
           await get().fetchWishlist()
         } catch (e) {
-          console.error("Remove from wishlist error:", e)
-          set({ wishlist: previous })
+          console.warn("Wishlist remove API unavailable; kept local change.", e)
         }
       },
 
@@ -307,35 +329,30 @@ export const useWishlistStore = create<
             headers: getAuthHeaders({ json: false }),
           })
 
+          // Routes not deployed — keep localStorage wishlist
+          if (res.status === 404) return
+
           if (!res.ok) {
-            if (res.status === 404) {
-              set({ wishlist: [], wishlistId: null, ...emptyTotals })
-            }
             throw new Error("Failed to fetch wishlist")
           }
 
           const data = (await res.json()) as BackendWishlistResponse
           const payload = extractWishlistPayload(data)
 
-          if (!payload) {
-            set({ wishlist: [], wishlistId: null, ...emptyTotals })
-            return
-          }
+          if (!payload) return
 
           set((state) => applyBackendWishlist(payload, state.wishlist))
         } catch (e) {
-          console.error("Fetch wishlist failed", e)
+          console.warn("Fetch wishlist failed; keeping local wishlist.", e)
         }
       },
 
-      /* ───────────── Clear (no bulk delete route — remove each item) ───────────── */
+      /* ───────────── Clear ───────────── */
       clearWishlist: async () => {
         const previous = get().wishlist
+        set({ wishlist: [], wishlistId: null, ...emptyTotals })
 
-        if (!getAuthToken()) {
-          set({ wishlist: [], wishlistId: null, ...emptyTotals })
-          return
-        }
+        if (!getAuthToken()) return
 
         try {
           for (const item of previous) {
@@ -351,18 +368,15 @@ export const useWishlistStore = create<
               headers: getAuthHeaders(),
             })
 
+            const text = res.ok ? "" : await res.text().catch(() => "")
+            if (!res.ok && isRouteMissing(res.status, text)) continue
+
             if (!res.ok) {
-              const text = await res.text().catch(() => "")
               console.error("Clear wishlist item failed:", res.status, text)
-              await get().fetchWishlist()
-              throw new Error("Failed to clear wishlist")
             }
           }
-
-          set({ wishlist: [], wishlistId: null, ...emptyTotals })
         } catch (e) {
-          console.error("Clear wishlist error:", e)
-          throw e
+          console.warn("Clear wishlist API unavailable; cleared locally.", e)
         }
       },
     }),

@@ -23,10 +23,11 @@ import { PaginationDemo } from '@/components/website/PaginatioDemo';
 import CustomLoader from '@/components/customLoader/CustomLoader';
 import { formatMoney } from '@/lib/formatMoney';
 import {
-  getDistinctProductColorLabels,
+  getDistinctProductColorOptions,
   productMatchesColorFilter,
 } from '@/lib/productVariantColors';
 import { PRODUCTS_REVALIDATE_SECONDS } from '@/lib/revalidate';
+import getBackgroundColor from '@/lib/getBackgroundColor';
 
 const ITEMS_PER_PAGE = 8;
 
@@ -99,8 +100,9 @@ export default function ShopClient({ lang, initialProducts }: ShopClientProps) {
   }, [filteredProducts, currentPage]);
 
   const products = data?.data?.products;
-  const availableColors = useMemo<string[]>(
-    () => (products?.length ? getDistinctProductColorLabels(products, lang) : []),
+  const availableColors = useMemo(
+    () =>
+      products?.length ? getDistinctProductColorOptions(products, lang) : [],
     [products, lang]
   );
 
@@ -252,24 +254,40 @@ export default function ShopClient({ lang, initialProducts }: ShopClientProps) {
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-2 px-2 pt-2">
-                {availableColors.map((color) => (
-                  <div key={color} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`color-${color}`}
-                      checked={selectedColors === color}
-                      onCheckedChange={(checked) => {
-                        setRequestedPage(1);
-                        setSelectedColors(checked ? color : '');
-                      }}
-                    />
-                    <label
-                      htmlFor={`color-${color}`}
-                      className="cursor-pointer text-sm capitalize text-[#5f4732]"
-                    >
-                      {color}
-                    </label>
-                  </div>
-                ))}
+                {availableColors.length === 0 ? (
+                  <p className="text-xs text-[#8b7355]">
+                    {isRTL
+                      ? 'لا توجد ألوان متاحة بعد — المنتجات المتغيرة فقط تظهر هنا.'
+                      : 'No colors yet — only variable products with a Color attribute appear here.'}
+                  </p>
+                ) : (
+                  availableColors.map((color) => (
+                    <div key={color.key} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`color-${color.key}`}
+                        checked={selectedColors === color.key}
+                        onCheckedChange={(checked) => {
+                          setRequestedPage(1);
+                          setSelectedColors(checked ? color.key : '');
+                        }}
+                      />
+                      <span
+                        className="h-3.5 w-3.5 shrink-0 rounded-full border border-[#dcc3a0] ring-1 ring-black/10"
+                        style={{
+                          backgroundColor:
+                            color.css || getBackgroundColor(color.key),
+                        }}
+                        aria-hidden
+                      />
+                      <label
+                        htmlFor={`color-${color.key}`}
+                        className="cursor-pointer text-sm capitalize text-[#5f4732]"
+                      >
+                        {color.label}
+                      </label>
+                    </div>
+                  ))
+                )}
               </CollapsibleContent>
             </Collapsible>
           </div>

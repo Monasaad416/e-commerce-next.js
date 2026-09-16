@@ -48,6 +48,9 @@ export default function Orders() {
           headers: getAuthHeaders(),
         });
 
+        const payload = await response.json();
+        console.log("orders payload", payload);
+
         if (response.status === 401) {
           useAuthStore.getState().setToken(null);
           if (!cancelled) {
@@ -56,8 +59,6 @@ export default function Orders() {
           }
           return;
         }
-
-        const payload = await response.json();
 
         if (!response.ok) {
           const message =

@@ -152,7 +152,9 @@ export default function WishlistPage() {
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-50 border">
                     <Image
-                      src={resolveImageUrl(item.image)}
+                      src={resolveImageUrl(item.image, {
+                        key: item.slug || item.id,
+                      })}
                       alt={item.name}
                       fill
                       className="object-cover"

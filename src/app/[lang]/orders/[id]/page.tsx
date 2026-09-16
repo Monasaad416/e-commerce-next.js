@@ -86,6 +86,8 @@ export default function OrderDetailsPage() {
           headers: getAuthHeaders(),
         });
 
+        console.log("response", response);
+
         if (response.status === 401) {
           useAuthStore.getState().setToken(null);
           if (!cancelled) {

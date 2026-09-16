@@ -11,12 +11,15 @@ function unwrapData(value: unknown, depth = 0): Record<string, unknown> | null {
   const obj = asRecord(value);
   if (!obj || depth > 4) return obj;
 
-  if ("id" in obj) return obj;
+  // Prefer flattening attributes before returning on id
+  if ("id" in obj || "order_id" in obj) {
+    return flattenOrderRecord(obj);
+  }
 
   const nested = asRecord(obj.data);
   if (nested) return unwrapData(nested, depth + 1);
 
-  return obj;
+  return flattenOrderRecord(obj);
 }
 
 function looksLikeOrder(value: unknown): value is Record<string, unknown> {
@@ -24,12 +27,172 @@ function looksLikeOrder(value: unknown): value is Record<string, unknown> {
   return Boolean(obj && ("id" in obj || "order_id" in obj));
 }
 
+/** Merge JSON:API `attributes` / nested `data` / `order` onto one flat order object. */
+function flattenOrderRecord(
+  raw: Record<string, unknown>,
+  depth = 0,
+): Record<string, unknown> {
+  if (depth > 4) return raw;
+
+  let flat: Record<string, unknown> = { ...raw };
+
+  const attrs = asRecord(raw.attributes);
+  if (attrs) flat = { ...attrs, ...flat };
+
+  const nestedOrder = asRecord(raw.order);
+  if (nestedOrder) {
+    flat = { ...flattenOrderRecord(nestedOrder, depth + 1), ...flat };
+  }
+
+  const data = asRecord(raw.data);
+  if (
+    data &&
+    ("id" in data ||
+      "order_id" in data ||
+      "attributes" in data ||
+      "total" in data ||
+      "status" in data)
+  ) {
+    flat = { ...flattenOrderRecord(data, depth + 1), ...flat };
+  }
+
+  return flat;
+}
+
 function normalizeOrder(raw: Record<string, unknown>): IOrder {
-  const id = raw.id ?? raw.order_id;
+  const flat = flattenOrderRecord(raw);
+  const id = flat.id ?? flat.order_id;
+  const createdAt =
+    coerceDateString(flat.created_at) ||
+    coerceDateString(flat.createdAt) ||
+    coerceDateString(flat.date) ||
+    coerceDateString(flat.order_date) ||
+    coerceDateString(flat.orderDate) ||
+    coerceDateString(flat.placed_at) ||
+    coerceDateString(flat.placedAt) ||
+    coerceDateString(flat.formatted_date) ||
+    coerceDateString(flat.formattedDate) ||
+    findDateDeep(flat) ||
+    findAnyDateString(flat);
+
   return {
-    ...(raw as unknown as IOrder),
+    ...(flat as unknown as IOrder),
     id: Number(id),
+    ...(createdAt ? { created_at: createdAt } : {}),
   };
+}
+
+/** Walk object for any date-like key (Laravel Resource / nested payloads). */
+function findDateDeep(
+  value: unknown,
+  depth = 0,
+): string | undefined {
+  if (depth > 3) return undefined;
+
+  const direct = coerceDateString(value);
+  if (direct && depth > 0) return direct;
+
+  const obj = asRecord(value);
+  if (!obj) return undefined;
+
+  for (const [key, nested] of Object.entries(obj)) {
+    if (
+      /date|created|updated|placed|time/i.test(key) &&
+      !/update_payment|status/i.test(key)
+    ) {
+      const found = coerceDateString(nested);
+      if (found) return found;
+    }
+  }
+
+  for (const key of ["attributes", "order", "data", "meta", "timestamps"]) {
+    if (key in obj) {
+      const found = findDateDeep(obj[key], depth + 1);
+      if (found) return found;
+    }
+  }
+
+  return undefined;
+}
+
+/** Last resort: find any YYYY-MM-DD (or similar) string in the object tree. */
+function findAnyDateString(value: unknown, depth = 0): string | undefined {
+  if (depth > 4) return undefined;
+
+  if (typeof value === "string") {
+    if (/\d{4}-\d{2}-\d{2}/.test(value) || /^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/.test(value)) {
+      return value.trim();
+    }
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    for (const entry of value.slice(0, 8)) {
+      const found = findAnyDateString(entry, depth + 1);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  const obj = asRecord(value);
+  if (!obj) return undefined;
+
+  for (const [key, nested] of Object.entries(obj)) {
+    if (/date|created|updated|placed|time/i.test(key)) {
+      const found = findAnyDateString(nested, depth + 1);
+      if (found) return found;
+    }
+  }
+
+  for (const nested of Object.values(obj)) {
+    if (asRecord(nested) || Array.isArray(nested) || typeof nested === "string") {
+      const found = findAnyDateString(nested, depth + 1);
+      if (found) return found;
+    }
+  }
+
+  return undefined;
+}
+
+/** Accept ISO strings, timestamps, or Laravel/Carbon objects. */
+function coerceDateString(value: unknown): string | undefined {
+  if (value == null) return undefined;
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === "—" || trimmed === "-" || trimmed === "null") {
+      return undefined;
+    }
+    // Numeric string timestamp
+    if (/^\d{10,13}$/.test(trimmed)) {
+      const n = Number(trimmed);
+      const d = new Date(trimmed.length >= 13 ? n : n * 1000);
+      return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+    }
+    return trimmed;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const d = new Date(value > 1e12 ? value : value * 1000);
+    return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+  }
+
+  const obj = asRecord(value);
+  if (!obj) return undefined;
+
+  // Carbon / DateTime serialized to array/object
+  if (typeof obj.date === "string" && obj.date.trim()) {
+    return obj.date.trim().replace(" ", "T");
+  }
+  if (typeof obj.$date === "string" && obj.$date.trim()) return obj.$date.trim();
+  if (typeof obj.datetime === "string" && obj.datetime.trim()) {
+    return obj.datetime.trim().replace(" ", "T");
+  }
+  // { carbon: true, timestamp: 1710000000 } style
+  if (typeof obj.timestamp === "number") {
+    return coerceDateString(obj.timestamp);
+  }
+  return undefined;
 }
 
 /** Arrays, or Laravel Resource collections: { data: [...] }. */
@@ -153,26 +316,36 @@ export function extractOrders(payload: unknown): IOrder[] {
   const root = asRecord(payload);
   if (!root) return [];
 
-  const data = unwrapData(root.data) ?? asRecord(root.data);
+  const outer = asRecord(root.data);
+  // Laravel paginate + Resource::collection inside response()->json():
+  // { success, data: { data: [ orders ], links, meta } }
+  // Correct additional() style:
+  // { success, data: [ orders ], links, meta }
   const candidates = [
     root.orders,
-    data?.orders,
-    asRecord(root.data)?.orders,
-    asRecord(root.data)?.data,
-    data && Array.isArray((data as { data?: unknown }).data)
-      ? (data as { data: unknown }).data
-      : null,
+    outer?.orders,
+    // paginated resource collection (most common with their controller)
+    outer && Array.isArray(outer.data) ? outer.data : null,
     Array.isArray(root.data) ? root.data : null,
+    // single-wrapped list
+    coerceArray(outer?.data),
     Array.isArray(payload) ? payload : null,
   ];
 
   for (const value of candidates) {
-    const arr = coerceArray(value);
-    if (!arr) continue;
-    return arr
-      .map((row) => unwrapData(row) ?? asRecord(row))
-      .filter(looksLikeOrder)
-      .map((row) => normalizeOrder(row!));
+    const arr = coerceArray(value) ?? (Array.isArray(value) ? value : null);
+    if (!arr?.length) continue;
+
+    // Skip if this "array" is not orders (e.g. accidental meta)
+    const mapped = arr
+      .map((row) => {
+        const record = unwrapData(row) ?? asRecord(row);
+        if (!record) return null;
+        return normalizeOrder(record);
+      })
+      .filter((row): row is IOrder => row != null && Number.isFinite(row.id));
+
+    if (mapped.length) return mapped;
   }
 
   return [];
@@ -200,8 +373,19 @@ export function extractOrderDetail(payload: unknown): OrderDetail | null {
 
   if (!orderCandidate) return null;
 
-  const order = normalizeOrder(orderCandidate);
+  let order = normalizeOrder(orderCandidate);
   if (!Number.isFinite(order.id)) return null;
+
+  // Date sometimes lives on the wrapper, not inside OrderResource
+  if (!getOrderDateValue(order)) {
+    const outerDate =
+      findDateDeep(dataLayer) ||
+      findDateDeep(root) ||
+      findDateDeep(unwrapped);
+    if (outerDate) {
+      order = { ...order, created_at: outerDate };
+    }
+  }
 
   const items = extractItems(
     root.items,
@@ -238,29 +422,63 @@ export function findOrderDetailInList(
 
   const raw = match as unknown as Record<string, unknown>;
   const items = collectItemsFromOrder(raw);
-  return { order: match, items };
+  let order = match;
+  if (!getOrderDateValue(order)) {
+    const outerDate = findDateDeep(asRecord(payload)) || findDateDeep(raw);
+    if (outerDate) order = { ...order, created_at: outerDate };
+  }
+  return { order, items };
 }
 
 export function getOrderDateValue(order: Partial<IOrder> | null | undefined) {
   if (!order) return undefined;
   const raw = order as Record<string, unknown>;
+
   const candidates = [
     order.created_at,
     raw.date,
     raw.order_date,
+    raw.orderDate,
     raw.createdAt,
+    raw.placed_at,
+    raw.placedAt,
     order.updated_at,
+    raw.updatedAt,
   ];
+
   for (const value of candidates) {
-    if (typeof value === "string" && value.trim()) return value;
+    const coerced = coerceDateString(value);
+    if (coerced) return coerced;
   }
-  return undefined;
+
+  return findDateDeep(raw);
 }
 
 export function formatOrderDate(value: string | undefined, locale: string) {
   if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  // "Y-m-d H:i:s" from Laravel parses fine in most engines; replace space for Safari
+  const normalized = value.includes(" ") && !value.includes("T")
+    ? value.replace(" ", "T")
+    : value;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) {
+    // Try d/m/Y or d-m-Y
+    const m = value.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
+    if (m) {
+      const day = Number(m[1]);
+      const month = Number(m[2]);
+      const year = Number(m[3].length === 2 ? `20${m[3]}` : m[3]);
+      const parsed = new Date(year, month - 1, day);
+      if (!Number.isNaN(parsed.getTime())) {
+        return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }).format(parsed);
+      }
+    }
+    return value;
+  }
   return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
     year: "numeric",
     month: "short",

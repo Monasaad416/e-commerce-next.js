@@ -6,16 +6,21 @@ import { NextResponse, type NextRequest } from "next/server"
 
 const protectedRoutes = ["/dashboard", "/profile", "/settings"]
 
-// Routes that should skip intl middleware
-const authRoutes = ["/api", "/auth", "/_next", "/favicon"]
+// Routes that should skip intl middleware (incl. public static assets)
+const authRoutes = ["/api", "/auth", "/_next", "/favicon", "/leather"]
+
+const STATIC_FILE = /\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf|eot|mp4|webm|webmanifest)$/i
 
 const intlMiddleware = createMiddleware(routing)
 
 export default async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  // Skip everything for API and static files
-  if (authRoutes.some((route) => pathname.startsWith(route))) {
+  // Skip API routes and static public files (e.g. /leather/*.jpg)
+  if (
+    authRoutes.some((route) => pathname.startsWith(route)) ||
+    STATIC_FILE.test(pathname)
+  ) {
     return NextResponse.next()
   }
 
@@ -52,6 +57,8 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Exclude api, _next, static files, images
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)"],
+  // Exclude api, _next, and static assets so intl does not prefix /en/ on them
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|leather|.*\\.(?:png|jpe?g|gif|webp|svg|ico|woff2?|ttf|eot|mp4|webm|webmanifest)$).*)",
+  ],
 }

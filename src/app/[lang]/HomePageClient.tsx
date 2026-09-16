@@ -8,6 +8,7 @@ import type { PageContentData } from "@/lib/PageContent";
 import SecHomeBanner from "@/components/website/Home/SecHomeBanner";
 import CraftProcess from "@/components/website/Home/CraftProcess";
 import { resolveImageUrl } from "@/lib/media";
+import { LEATHER_HERO, resolveLeatherAwareUrl } from "@/lib/leatherMedia";
 import { getLocalizedString, stripHtml } from "@/lib/localizedField";
 import CustomLoader from "@/components/customLoader/CustomLoader";
 import type { IProduct } from "@/interfaces/productType";
@@ -87,11 +88,14 @@ export default function HomePageClient({
             ? content.main_banner_button_link
             : undefined
         }
-        imageUrl={
+        imageUrl={resolveLeatherAwareUrl(
           content?.main_banner_image
-            ? resolveImageUrl(content.main_banner_image as string)
-            : undefined
-        }
+            ? resolveImageUrl(String(content.main_banner_image), {
+                key: "home-hero",
+              })
+            : undefined,
+          { fallback: LEATHER_HERO, key: "home-hero" },
+        )}
         trustPoints={trustPointsFromCms}
         stats={statsFromCms}
       />
