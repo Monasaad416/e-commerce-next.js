@@ -2,6 +2,8 @@ export interface ICartItem {
   id: string,
   name: string,
   type: string,
+  /** Used to keep leather fallback images stable with the shop/PDP. */
+  slug?: string,
   price: number,
   qty: number,
   total?: number,

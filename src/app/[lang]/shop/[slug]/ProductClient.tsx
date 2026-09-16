@@ -190,11 +190,11 @@ export default function ProductClient({
   }, [product, matchedVariant]);
 
   const primaryImage = useMemo(() => {
-    if (!product) return "";
+    if (!product) return resolveImageUrl(null, { key: imageKey });
 
     if (product.type === "simple") {
       const img = product.images?.[0];
-      return img ? resolveImageUrl(img.url || img.image_path) : "";
+      return resolveImageUrl(img?.url || img?.image_path, { key: imageKey });
     }
 
     if (product.type === "variable") {
@@ -204,18 +204,18 @@ export default function ProductClient({
           matchedVariant.images?.[0]?.url ??
           matchedVariant.images?.[0]?.image_path ??
           null;
-        return imgPath ? resolveImageUrl(imgPath) : "";
+        return resolveImageUrl(imgPath, { key: imageKey });
       }
 
       const v = product.variants[0];
-      if (!v) return "";
+      if (!v) return resolveImageUrl(null, { key: imageKey });
       const imgPath =
         v.featured_image ?? v.images?.[0]?.url ?? v.images?.[0]?.image_path ?? null;
-      return imgPath ? resolveImageUrl(imgPath) : "";
+      return resolveImageUrl(imgPath, { key: imageKey });
     }
 
-    return "";
-  }, [product, matchedVariant]);
+    return resolveImageUrl(null, { key: imageKey });
+  }, [product, matchedVariant, imageKey]);
 
   const formattedPrice = useMemo(() => formatMoney(price), [price]);
 

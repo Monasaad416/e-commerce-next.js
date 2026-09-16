@@ -7,6 +7,7 @@ import getAuthHeaders from "@/lib/getAuthHeaders"
 import getAuthToken from "@/lib/getAuthToken"
 import { BackendApiMessage, BackendCartItem, BackendCartPayload, BackendCartResponse } from "@/types/cart"
 import { getCartUnitPrice } from "@/lib/cartPricing"
+import { resolveImageUrl } from "@/lib/media"
 
 
 
@@ -62,6 +63,7 @@ function mapBackendCartItems(
       id: String(i.product_id),
       cart_item_id: String(i.id),
       name: existing?.name ?? i.name ?? `#${i.product_id}`,
+      slug: existing?.slug,
       type: existing?.type ?? (i.product_variant_id ? "variable" : "simple"),
       qty: Number(i.qty),
       price: Number(i.price),
@@ -69,8 +71,18 @@ function mapBackendCartItems(
       subtotal: Number(i.subtotal ?? 0),
       tax: Number(i.tax ?? 0),
       total: Number(i.total ?? 0),
-      image: existing?.image ?? i.image ?? "",
-      selection: existing?.selection,
+      image: resolveImageUrl(existing?.image || i.image || "", {
+        key: existing?.slug || String(i.product_id),
+      }),
+      selection: existing?.selection
+        ? {
+            ...existing.selection,
+            image: resolveImageUrl(
+              existing.selection.image || existing.image || i.image || "",
+              { key: existing?.slug || String(i.product_id) },
+            ),
+          }
+        : existing?.selection,
       product_variant_id:
         i.product_variant_id != null ? String(i.product_variant_id) : undefined,
       is_available: Boolean(i.is_available),

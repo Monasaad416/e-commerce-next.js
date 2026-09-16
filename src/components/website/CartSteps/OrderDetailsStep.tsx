@@ -49,7 +49,8 @@ const OrderDetailsStep = ({}: { currentStep?: number } = {}) => {
                 <ul className="divide-y divide-shop_light_gray/10">
                     {cart.map((item, index) => {
                         const variantImage = resolveImageUrl(
-                        item?.selection?.image || item?.image || noImage.src,
+                            item?.selection?.image || item?.image || noImage.src,
+                            { key: item?.slug || String(item?.id ?? "") },
                         );
                         const unavailable = item?.is_available === false;
                         const unitPrice = getCartUnitPrice(item);

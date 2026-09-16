@@ -148,7 +148,13 @@ export default function ProductCard({ product }: { product: IProduct }) {
             </p>
           </div>
 
-          <AddToCartBtn product={product} selection={cardSelection} qty={1} />
+          <AddToCartBtn
+            product={product}
+            selection={cardSelection}
+            qty={1}
+            imageOverride={featuredImage}
+            priceOverride={showStrike ? (numericDiscount as number) : numericPrice}
+          />
         </div>
       </CardContent>
     </Card>
